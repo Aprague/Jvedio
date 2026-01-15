@@ -865,33 +865,27 @@
   <PropertyGroup>
     <PreBuildEvent>mkdir "$(ProjectDir)bin\Debug"
 
-XCOPY  "$(ProjectDir)Reference\JvedioLib.dll"  "$(ProjectDir)bin\Debug"    /Y /i
-XCOPY  "$(ProjectDir)Resources\Jvedio.ico"  "$(ProjectDir)bin\Debug"    /Y /i
+XCOPY  "$(ProjectDir)Reference\JvedioLib.dll"  "$(ProjectDir)bin\Debug\"    /Y /i
+XCOPY  "$(ProjectDir)Resources\Jvedio.ico"  "$(ProjectDir)bin\Debug\"    /Y /i
 
-XCOPY  "$(ProjectDir)Reference\MediaInfo.dll"  "$(ProjectDir)bin\Debug"    /Y /i
-XCOPY  "$(ProjectDir)Reference\MediaInfo.dll"  "$(ProjectDir)bin\Release"    /Y /i
+XCOPY  "$(ProjectDir)Reference\MediaInfo.dll"  "$(ProjectDir)bin\Debug\"    /Y /i
+XCOPY  "$(ProjectDir)Reference\MediaInfo.dll"  "$(ProjectDir)bin\Release\"    /Y /i
 
 mkdir "$(ProjectDir)bin\Release"
 
-XCOPY  "$(ProjectDir)Reference\JvedioLib.dll"  "$(ProjectDir)bin\Release"    /Y /i
-XCOPY  "$(ProjectDir)Resources\Jvedio.ico"  "$(ProjectDir)bin\Release"    /Y /i
+XCOPY  "$(ProjectDir)Reference\JvedioLib.dll"  "$(ProjectDir)bin\Release\"    /Y /i
+XCOPY  "$(ProjectDir)Resources\Jvedio.ico"  "$(ProjectDir)bin\Release\"    /Y /i
 
-XCOPY  "D:\SuperStudio\Newtonsoft.Json\Src\Newtonsoft.Json\bin\Release\net472\Newtonsoft.Json.dll" "$(ProjectDir)Reference"    /Y /i
-
-XCOPY "D:\SuperStudio\SuperUtils\SuperUtils\bin\Debug\SuperUtils.dll" "$(ProjectDir)Reference"    /Y /i
-
-XCOPY "D:\SuperStudio\SuperControls\SuperControls.Style\bin\Debug\SuperControls.Style.dll" "$(ProjectDir)Reference"    /Y /i
-
-    </PreBuildEvent>
+</PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>XCOPY  "$(ProjectDir)Data\config.ini"  "$(ProjectDir)bin\Debug"   /Y /i
+    <PostBuildEvent>XCOPY  "$(ProjectDir)Data\config.ini"  "$(ProjectDir)bin\Debug\"   /Y /i
 
 mkdir "$(ProjectDir)bin\Debug\plugins\crawlers"
 
 XCOPY  "$(ProjectDir)Reference\CommonNet.dll"  "$(ProjectDir)bin\Debug\plugins\crawlers"    /Y /i
 
-XCOPY  "$(ProjectDir)Data\config.ini"  "$(ProjectDir)bin\Release"   /Y /i
+XCOPY  "$(ProjectDir)Data\config.ini"  "$(ProjectDir)bin\Release\"   /Y /i
 
 mkdir "$(ProjectDir)bin\Release\plugins\crawlers"
 
