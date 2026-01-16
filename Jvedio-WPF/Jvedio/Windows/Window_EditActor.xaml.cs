@@ -173,7 +173,7 @@ namespace Jvedio
             }
 
             string basePicPath = ConfigManager.Settings.PicPaths[pathType.ToString()].ToString();
-            string saveDir = System.IO.Path.GetFullPath(System.IO.Path.Combine(basePicPath, "Actresses"));
+            string saveDir = System.IO.Path.GetFullPath(System.IO.Path.Combine(basePicPath, "Actors"));
             string name = CurrentActorInfo.ActorName.ToProperFileName();
             string[] dragdropFiles = (string[])e.Data.GetData(DataFormats.FileDrop);
             if (dragdropFiles != null && dragdropFiles.Length > 0) {

@@ -80,7 +80,7 @@ namespace Jvedio.Core.Global
             InitDirs = new[] { BackupPath, LogPath, PicPath, ProjectImagePath, AllOldDataPath, Path.Combine(BasePluginsPath, "themes"), Path.Combine(BasePluginsPath, "crawlers") };
             oldDataPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DataBase"); // Jvedio 5.0 之前的
             BasePicPath = string.Empty;
-            PicPaths = new[] { "ScreenShot", "SmallPic", "BigPic", "ExtraPic", "Actresses", "Gif" };
+            PicPaths = new[] { "ScreenShot", "SmallPic", "BigPic", "ExtraPic", "Actors", "Gif" };
 
             ReferenceDllPaths = new string[]{
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"x64\SQLite.Interop.dll") ,

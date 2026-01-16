@@ -148,10 +148,10 @@ namespace Jvedio
         {
             ConfigFirstRun();
             InitTheme();
-            InitNotice();
+            //InitNotice();
             InitDataBases();
             BindingEventAfterRender();
-            InitUpgrade();
+            //InitUpgrade();
             CheckServerStatus();
             InitAvalonEdit();
             InitSideMenu();

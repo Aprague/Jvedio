@@ -518,7 +518,7 @@ namespace Jvedio.Entity
                 else if (imageType == ImageType.Gif)
                     saveDir = System.IO.Path.Combine(basePicPath, "Gif");
                 else if (imageType == ImageType.Actor) {
-                    saveDir = System.IO.Path.Combine(basePicPath, "Actresses");
+                    saveDir = System.IO.Path.Combine(basePicPath, "Actors");
                     return System.IO.Path.GetFullPath(saveDir);
                 }
                 if (!Directory.Exists(saveDir))

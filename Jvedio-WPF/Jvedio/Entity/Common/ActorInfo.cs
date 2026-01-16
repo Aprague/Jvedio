@@ -303,7 +303,7 @@ namespace Jvedio.Entity
             if (pathType != PathType.RelativeToData) {
                 if (pathType == PathType.RelativeToApp)
                     basePicPath = System.IO.Path.Combine(PathManager.CurrentUserFolder, basePicPath);
-                string saveDir = System.IO.Path.Combine(basePicPath, "Actresses");
+                string saveDir = System.IO.Path.Combine(basePicPath, "Actors");
                 if (!Directory.Exists(saveDir))
                     FileHelper.TryCreateDir(saveDir);
 
