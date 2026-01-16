@@ -141,7 +141,7 @@ namespace Jvedio
                 d.Add("SmallImagePath", "./poster");
                 d.Add("PreviewImagePath", "extrafanart/");
                 d.Add("ScreenShotPath", "./.screenshot");
-                d.Add("ActorImagePath", "./.actor");
+                d.Add("ActorImagePath", "./pic/Actors");
                 dict.Add(PathType.RelativeToData.ToString(), d);
                 Settings.PicPathJson = JsonConvert.SerializeObject(dict);
                 Settings.PicPaths = dict;

@@ -282,7 +282,8 @@ namespace Jvedio.Entity
         public static void SetImage(ref ActorInfo actorInfo)
         {
             // 加载图片
-            PathType pathType = (PathType)ConfigManager.Settings.PicPathMode;
+            //PathType pathType = (PathType)ConfigManager.Settings.PicPathMode;
+            PathType pathType = PathType.RelativeToApp;
             BitmapImage smallimage = null;
             if (pathType != PathType.RelativeToData) {
                 // 如果是相对于影片格式的，则不设置图片
@@ -298,7 +299,8 @@ namespace Jvedio.Entity
         public string GetImagePath(string dataPath = "", string ext = ".jpg", bool searchExt = true)
         {
             string result = string.Empty;
-            PathType pathType = (PathType)ConfigManager.Settings.PicPathMode;
+            //PathType pathType = (PathType)ConfigManager.Settings.PicPathMode;
+            PathType pathType = PathType.RelativeToApp;
             string basePicPath = ConfigManager.Settings.PicPaths[pathType.ToString()].ToString();
             if (pathType != PathType.RelativeToData) {
                 if (pathType == PathType.RelativeToApp)
