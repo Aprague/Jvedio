@@ -395,7 +395,8 @@ namespace Jvedio
                     continue;
                 string VID = string.Empty;
                 if (ConfigManager.ScanConfig.FetchVID)
-                    VID = JvedioLib.Security.Identify.GetVID(Path.GetFileNameWithoutExtension(path));
+                    VID = Path.GetFileNameWithoutExtension(path).Split(' ')[0].ToUpper();
+                    //VID = JvedioLib.Security.Identify.GetVID(Path.GetFileNameWithoutExtension(path));
                 if (string.IsNullOrEmpty(VID)) {
                     // 无识别码
                     noVIDList.Add(path);
