@@ -90,7 +90,7 @@ namespace Jvedio
 
         public static void Restore()
         {
-            Settings.TeenMode = true;
+            Settings.TeenMode = false;
         }
 
         private static void Init()
@@ -139,7 +139,7 @@ namespace Jvedio
                 Dictionary<string, string> d = new Dictionary<string, string>();
                 d.Add("BigImagePath", "./fanart");
                 d.Add("SmallImagePath", "./poster");
-                d.Add("PreviewImagePath", "./.preview");
+                d.Add("PreviewImagePath", "extrafanart/");
                 d.Add("ScreenShotPath", "./.screenshot");
                 d.Add("ActorImagePath", "./.actor");
                 dict.Add(PathType.RelativeToData.ToString(), d);

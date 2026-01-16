@@ -24,7 +24,7 @@ namespace Jvedio.Core.WindowConfig
             DisplaySearchBox = true;
             DisplayStatusBar = true;
 
-            DetailWindowShowAllMovie = false;
+            DetailWindowShowAllMovie = true;
             ScrollSpeedFactor = 1.5;
         }
 

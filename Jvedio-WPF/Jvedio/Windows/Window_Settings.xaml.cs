@@ -1251,9 +1251,9 @@ namespace Jvedio
                 ConfigManager.Restore();
 
                 // 基本
-                vieModel.OpenDataBaseDefault = false;
-                vieModel.ScanOnStartUp = false;
-                vieModel.CloseToTaskBar = false;
+                vieModel.OpenDataBaseDefault = true;
+                vieModel.ScanOnStartUp = true;
+                vieModel.CloseToTaskBar = true;
 
                 ConfigManager.Settings.DelInfoAfterDelFile = true;
                 ConfigManager.Settings.HotKeyEnable = false;
@@ -1262,7 +1262,7 @@ namespace Jvedio
                 ConfigManager.Settings.VideoPlayerPath = "";
 
                 // 图片
-                vieModel.AutoGenScreenShot = true;
+                vieModel.AutoGenScreenShot = false;
 
                 ImageSelectComboBox.SelectedIndex = 0;
                 vieModel.BasePicPath = Path.Combine(PathManager.CurrentUserFolder, "pic");
@@ -1273,17 +1273,17 @@ namespace Jvedio
                 vieModel.MinFileSize = ScanConfig.DEFAULT_MIN_FILE_SIZE;
                 vieModel.DataExistsIndexAfterScan = true;
 
-                ConfigManager.ScanConfig.ScanNfo = false;
+                ConfigManager.ScanConfig.ScanNfo = true;
                 ConfigManager.ScanConfig.Save();
 
                 vieModel.CopyNFOOverwriteImage = false;
-                vieModel.CopyNFOPicture = true;
-                vieModel.CopyNFOActorPicture = true;
+                vieModel.CopyNFOPicture = false;
+                vieModel.CopyNFOActorPicture = false;
                 vieModel.CopyNFOActorPath = ".actor";
-                vieModel.CopyNFOPreview = true;
-                vieModel.CopyNFOPreviewPath = ".preview";
+                vieModel.CopyNFOPreview = false;
+                vieModel.CopyNFOPreviewPath = "extrafanart/";
 
-                vieModel.CopyNFOScreenShot = true;
+                vieModel.CopyNFOScreenShot = false;
                 vieModel.CopyNFOScreenShotPath = ".screenshot";
 
                 // NFO 解析规则
@@ -1294,14 +1294,14 @@ namespace Jvedio
                 // 网络
                 vieModel.IgnoreCertVal = true;
                 vieModel.HttpTimeout = ProxyConfig.DEFAULT_TIMEOUT;
-                vieModel.DownloadWhenTitleNull = true;
+                vieModel.DownloadWhenTitleNull = false;
                 vieModel.SkipExistImage = false;
                 vieModel.SaveInfoToNFO = false;
 
-                ConfigManager.DownloadConfig.DownloadThumbNail = true;
-                ConfigManager.DownloadConfig.DownloadPoster = true;
+                ConfigManager.DownloadConfig.DownloadThumbNail = false;
+                ConfigManager.DownloadConfig.DownloadPoster = false;
                 ConfigManager.DownloadConfig.DownloadPreviewImage = false;
-                ConfigManager.DownloadConfig.DownloadActor = true;
+                ConfigManager.DownloadConfig.DownloadActor = false;
                 ConfigManager.DownloadConfig.OverrideInfo = false;
                 ConfigManager.DownloadConfig.Save();
 
@@ -1334,15 +1334,15 @@ namespace Jvedio
                 // 视频处理
                 vieModel.FFMPEG_Path = "";
                 vieModel.ScreenShot_ThreadNum = FFmpegConfig.DEFAULT_THREAD_NUM;
-                vieModel.SkipExistScreenShot = true;
-                vieModel.ScreenShotAfterImport = true;
+                vieModel.SkipExistScreenShot = false;
+                vieModel.ScreenShotAfterImport = false;
                 vieModel.ScreenShotNum = FFmpegConfig.DEFAULT_SCREEN_SHOT_NUM;
                 vieModel.ScreenShotIgnoreStart = FFmpegConfig.DEFAULT_SCREEN_SHOT_IGNORE_START;
                 vieModel.ScreenShotIgnoreEnd = FFmpegConfig.DEFAULT_SCREEN_SHOT_IGNORE_END;
                 vieModel.SkipExistGif = false;
                 vieModel.GifWidth = FFmpegConfig.DEFAULT_GIF_WIDTH;
                 vieModel.GifHeight = FFmpegConfig.DEFAULT_GIF_HEIGHT;
-                vieModel.GifAutoHeight = true;
+                vieModel.GifAutoHeight = false;
                 vieModel.GifDuration = FFmpegConfig.DEFAULT_GIF_DURATION;
 
                 // 重命名

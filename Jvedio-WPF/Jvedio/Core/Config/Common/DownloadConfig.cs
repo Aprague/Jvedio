@@ -7,11 +7,11 @@ namespace Jvedio.Core.Config
 
         private DownloadConfig() : base("DownloadConfig")
         {
-            DownloadInfo = true;
-            DownloadThumbNail = true;
-            DownloadPoster = true;
+            DownloadInfo = false;
+            DownloadThumbNail = false;
+            DownloadPoster = false;
             DownloadPreviewImage = false;
-            DownloadActor = true;
+            DownloadActor = false;
             OverrideInfo = false;
         }
 

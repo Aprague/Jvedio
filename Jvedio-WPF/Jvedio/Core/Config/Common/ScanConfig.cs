@@ -8,10 +8,10 @@ namespace Jvedio.Core.Config
 
         private ScanConfig() : base("ScanConfig")
         {
-            CopyNFOPicture = true;
-            CopyNFOPreview = true;
-            CopyNFOActorPicture = true;
-            CopyNFOScreenShot = true;
+            CopyNFOPicture = false;
+            CopyNFOPreview = false;
+            CopyNFOActorPicture = false;
+            CopyNFOScreenShot = false;
 
             CopyNFOActorPath = ".actor";
             CopyNFOPreviewPath = ".preview";

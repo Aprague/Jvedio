@@ -11,22 +11,22 @@ namespace Jvedio.Core.WindowConfig
 
         private Settings() : base($"WindowConfig.Settings")
         {
-            PicPathMode = 1; // 相对路径
-            AutoGenScreenShot = true;
+            PicPathMode = 2; // 相对影片路径
+            AutoGenScreenShot = false;
             CloseToTaskBar = true;
 
-            TeenMode = true;
+            TeenMode = false;
             AutoAddPrefix = true;
             Prefix = string.Empty;
             AutoBackupPeriodIndex = DEFAULT_BACKUP_PERIOD_INDEX;
             AutoBackup = true;
             DetailShowBg = true;
             CurrentLanguage = "zh-CN";
-            DownloadWhenTitleNull = true;
+            DownloadWhenTitleNull = false;
             IgnoreCertVal = true;
 
 
-            HotKeyEnable = false;
+            HotKeyEnable = true;
             HotKeyModifiers = 0;
             HotKeyVK = 0;
 

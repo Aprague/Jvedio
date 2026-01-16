@@ -18,13 +18,13 @@ namespace Jvedio.Core.Config
             ScreenShotNum = DEFAULT_SCREEN_SHOT_NUM;
             ScreenShotIgnoreStart = DEFAULT_SCREEN_SHOT_IGNORE_START;
             ScreenShotIgnoreEnd = DEFAULT_SCREEN_SHOT_IGNORE_END;
-            GifAutoHeight = true;
+            GifAutoHeight = false;
             GifWidth = DEFAULT_GIF_WIDTH;
             GifHeight = DEFAULT_GIF_HEIGHT;
             GifDuration = DEFAULT_GIF_DURATION;
-            SkipExistScreenShot = true;
-            SkipExistGif = true;
-            ScreenShotAfterImport = true;
+            SkipExistScreenShot = false;
+            SkipExistGif = false;
+            ScreenShotAfterImport = false;
         }
 
         private static FFmpegConfig _instance = null;
