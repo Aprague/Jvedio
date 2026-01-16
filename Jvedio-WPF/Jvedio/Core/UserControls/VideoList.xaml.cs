@@ -522,7 +522,13 @@ namespace Jvedio.Core.UserControls
                     } else {
                         if (File.Exists(arg.Path)) {
                             try {
-                                FileSystem.DeleteFile(arg.Path, UIOption.AllDialogs, RecycleOption.SendToRecycleBin);
+                                var directory = Path.GetDirectoryName(arg.Path);
+                                try {
+                                    FileSystem.DeleteDirectory(directory, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                                    //FileSystem.DeleteFile(arg.Path, UIOption.AllDialogs, RecycleOption.SendToRecycleBin);
+                                } catch (Exception ex) {
+                                    Console.WriteLine($"删除目录失败：{ex.Message}");
+                                }
                                 num++;
                             } catch (Exception ex) {
                                 Logger.Error(ex);
