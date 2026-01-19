@@ -456,7 +456,7 @@ namespace Jvedio.Core.UserControls
             vieModel.EditMode = false;
             vieModel.SelectedVideo.Clear();
             SetSelected();
-            vieModel.Refresh();
+            // vieModel.Refresh(); 删除文件后避免跳转到顶部
         }
 
 
@@ -520,24 +520,30 @@ namespace Jvedio.Core.UserControls
                             }
                         }
                     } else {
-                        if (File.Exists(arg.Path)) {
-                            try {
-                                var directory = Path.GetDirectoryName(arg.Path);
-                                try {
-                                    FileSystem.DeleteDirectory(directory, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
-                                    //FileSystem.DeleteFile(arg.Path, UIOption.AllDialogs, RecycleOption.SendToRecycleBin);
-                                } catch (Exception ex) {
-                                    Console.WriteLine($"删除目录失败：{ex.Message}");
-                                }
-                                num++;
-                            } catch (Exception ex) {
-                                Logger.Error(ex);
-                            }
-                        }
+                        DeleteToRecycleBin(arg);
+                        num++;
                     }
                 }));
             });
             return (num, totalCount);
+        }
+
+        private static void DeleteToRecycleBin(Video video)
+        {
+            String path = video.Path;
+            if (File.Exists(path)) {
+                try {
+                    var directory = Path.GetDirectoryName(path);
+                    try {
+                        FileSystem.DeleteDirectory(directory, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                        //FileSystem.DeleteFile(arg.Path, UIOption.AllDialogs, RecycleOption.SendToRecycleBin);
+                    } catch (Exception ex) {
+                        Console.WriteLine($"删除目录失败：{ex.Message}");
+                    }
+                } catch (Exception ex) {
+                    Logger.Error(ex);
+                }
+            }
         }
 
         public async void DeleteFile(object sender, RoutedEventArgs e)
@@ -1619,6 +1625,47 @@ namespace Jvedio.Core.UserControls
                 dataID > 0) {
                 Video video = videoMapper.SelectVideoByID(dataID);
                 PlayVideo(video);
+            }
+        }
+
+        private ObservableCollection<Video> getVideoByButton(object sender)
+        {
+            ViewVideo viewVideo = sender as ViewVideo;
+            if (viewVideo == null)
+                return null;
+
+            ItemsControl itemsControl = VisualHelper.FindParentOfType<ItemsControl>(viewVideo);
+            if (itemsControl == null)
+                return null;
+
+            return itemsControl.ItemsSource as ObservableCollection<Video>;
+        }
+
+        private void viewVideo_OnDeleteVideo(object sender, RoutedEventArgs e)
+        {
+            if (!vieModel.EditMode &&
+                sender is ViewVideo viewVideo &&
+                GetDataID(viewVideo) is long dataId && dataId > 0) {
+                Video video = GetVideoFromChildEle(viewVideo, dataId);
+                List<Video> temp = vieModel.SelectedVideo.ToList();
+                temp.Add(video);
+                DeleteToRecycleBin(video);
+                DeleteIDs(getVideoByButton(sender), temp, true);
+                onDeleteID?.Invoke(temp);
+            }
+        }
+
+        private void OnDeleteVideo(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag != null &&
+                long.TryParse(button.Tag.ToString(), out long dataID) &&
+                dataID > 0) {
+                Video video = videoMapper.SelectVideoByID(dataID);
+                List<Video> temp = vieModel.SelectedVideo.ToList();
+                temp.Add(video);
+                DeleteToRecycleBin(video);
+                DeleteIDs(getVideoByButton(sender), temp, true);
+                onDeleteID?.Invoke(temp);
             }
         }
 

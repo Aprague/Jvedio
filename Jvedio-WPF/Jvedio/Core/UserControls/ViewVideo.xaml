@@ -223,6 +223,36 @@
                     </Image.Style>
                 </Image>
 
+                <!--  删除按钮  -->
+                <Image
+                Height="40"
+                Margin="10,0,0,10"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Cursor="Hand"
+                MouseLeftButtonUp="DeleteVideo"
+                Opacity="0.8"
+                Source="/Resources/Picture/delete.png"
+                ToolTip="{Binding Title, Mode=OneWay}">
+                    <Image.Style>
+                        <Style TargetType="Image">
+                            <Setter Property="Visibility" Value="Hidden" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding EditMode, ElementName=viewVideo, Mode=OneWay}" Value="False" />
+                                        <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType={x:Type super:SimplePanel}, Mode=FindAncestor}}" Value="True" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                                <DataTrigger Binding="{Binding EditMode, ElementName=viewVideo, Mode=OneWay}" Value="True">
+                                    <Setter Property="Visibility" Value="Hidden" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Image.Style>
+                </Image>
+
 
             </super:SimplePanel>
             <!--  标签戳+ID  -->

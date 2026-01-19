@@ -100,6 +100,15 @@ namespace Jvedio.Core.UserControls
             add => AddHandler(OnPlayVideoEvent, value);
             remove => RemoveHandler(OnPlayVideoEvent, value);
         }
+
+        public static readonly RoutedEvent OnDeleteVideoEvent =
+           EventManager.RegisterRoutedEvent("OnDeleteVideo", RoutingStrategy.Bubble,
+               typeof(RoutedEventHandler), typeof(ViewVideo));
+
+        public event RoutedEventHandler OnDeleteVideo {
+            add => AddHandler(OnDeleteVideoEvent, value);
+            remove => RemoveHandler(OnDeleteVideoEvent, value);
+        }
         #endregion
 
 
@@ -245,6 +254,12 @@ nameof(ImageMode), typeof(int), typeof(ViewVideo), new PropertyMetadata(1));
         {
             if (!EditMode)
                 RaiseEvent(new RoutedEventArgs(OnPlayVideoEvent) { Source = this });
+        }
+
+        public void DeleteVideo(object sender, MouseButtonEventArgs e)
+        {
+            if (!EditMode)
+                RaiseEvent(new RoutedEventArgs(OnDeleteVideoEvent) { Source = this });
         }
 
         private void CopyText(object sender, MouseButtonEventArgs e)

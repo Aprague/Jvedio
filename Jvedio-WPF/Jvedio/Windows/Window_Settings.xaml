@@ -420,7 +420,7 @@
 
                                 </StackPanel>
 
-                                <TextBox FontSize="14" Text="请输入相对路径('./'表示当前目录'，'../'表示上一层目录')，演员头像相对于软件路径：./pic/Actors">
+                                <TextBox FontSize="14" Text="请输入相对路径('./'表示当前目录','../'表示上一层目录'),演员头像相对于软件路径：./pic/Actors">
                                     <TextBox.Style>
                                         <Style BasedOn="{StaticResource ReadOnlyNoWrapTextBox}" TargetType="TextBox">
                                             <Setter Property="Visibility" Value="Visible" />

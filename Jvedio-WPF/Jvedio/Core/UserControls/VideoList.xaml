@@ -175,6 +175,7 @@
                 ImageWidth="{Binding Path=DataContext.GlobalImageWidth, ElementName=videoList}"
                 OnGradeChange="viewVideo_OnItemChange"
                 OnPlayVideo="viewVideo_OnPlayVideo"
+                OnDeleteVideo="viewVideo_OnDeleteVideo"
                 OnTagStampRemove="viewVideo_OnTagStampRemove"
                 OnViewAssoData="viewVideo_OnViewAssoData"
                 ShowDetail="onItemShowDetail"
@@ -744,6 +745,15 @@
                                             Click="OpenVideoPath"
                                             Content="{DynamicResource OpenPath}"
                                             Style="{StaticResource ButtonWarning}"
+                                            Tag="{Binding DataID, Mode=OneWay}" />
+                                        <Button
+                                            Grid.Column="2"
+                                            Height="25"
+                                            Margin="5,0"
+                                            HorizontalAlignment="Stretch"
+                                            Click="OnDeleteVideo"
+                                            Content="删除"
+                                            Style="{StaticResource ButtonDanger}"
                                             Tag="{Binding DataID, Mode=OneWay}" />
                                     </StackPanel>
                                     <DataTemplate.Triggers>
