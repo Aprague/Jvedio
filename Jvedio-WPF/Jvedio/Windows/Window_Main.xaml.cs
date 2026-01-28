@@ -1345,6 +1345,85 @@ namespace Jvedio
             if (!CanDragTabItem)
                 return;
         }
+
+        private void OnLeftClick(object sender, MouseButtonEventArgs e)
+        {
+            MessageNotify.Info("增加刷新...");
+            LoadDataBase();
+            e.Handled = true; // 阻止事件继续传递
+        }
+
+        private void LoadDataBase()
+        {
+            if (vieModel == null) {
+                MessageNotify.Warning("vieModel 为 null");
+                return;
+            }
+
+            AppDatabase database = vieModel.CurrentAppDataBase;
+            if (database == null) {
+                MessageNotify.Warning("CurrentAppDataBase 为 null");
+                return;
+            }
+
+            string scanPath = database.ScanPath;
+
+            if (string.IsNullOrEmpty(scanPath)) {
+                MessageNotify.Warning("ScanPath 为 null 或空");
+                return;
+            }
+
+            List<string> toScan = JsonUtils.TryDeserializeObject<List<string>>(scanPath);
+            if (toScan == null) {
+                MessageNotify.Warning("反序列化结果为空");
+                return;
+            }
+
+            AddScanTask(toScan.ToArray());
+        }
+
+
+        private async void OnRightClick(object sender, MouseButtonEventArgs e)
+        {
+            MessageNotify.Info("删除刷新...");
+            await DeleteNotExist();
+            e.Handled = true; // 阻止事件继续传递
+        }
+
+        private async Task DeleteNotExist()
+        {
+            await Task.Run(async () =>
+            {
+                List<string> toDelete = new List<string>();
+                int count = 0;
+                SelectWrapper<MetaData> wrapper = new SelectWrapper<MetaData>();
+                wrapper.Select("DataID", "Path").Eq("DBId", ConfigManager.Main.CurrentDBId).Eq("DataType", 0);
+                List<MetaData> metaDatas = metaDataMapper.SelectList(wrapper);
+                if (metaDatas == null || metaDatas.Count == 0) {
+                    return;
+                }
+
+                int totalCount = metaDatas.Count;
+                for (int i = 0; i < totalCount; i++) {
+                    MetaData data = metaDatas[i];
+                    if (!File.Exists(data.Path)) {
+                        toDelete.Add(data.DataID.ToString());
+                        count++;
+                    }
+                }
+
+                if (toDelete.Count > 0) {
+                    try {
+                        videoMapper.deleteVideoByIds(toDelete);
+                        Application.Current.Dispatcher.Invoke(() => {
+                            vieModel.TabItemManager.RefreshAllTab(1);
+                        });
+                    } catch (Exception ex) {
+
+                    }
+                }
+            });
+        }
     }
 
 }

@@ -832,8 +832,8 @@ namespace Jvedio.ViewModel
 
         public override void Init()
         {
-            OpenDataBaseDefault = true;
-            ScanOnStartUp = true;
+            OpenDataBaseDefault = false;
+            ScanOnStartUp = false;
             SetServers();
             SetBasePicPaths();
             LoadNfoParseData();

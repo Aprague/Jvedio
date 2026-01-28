@@ -1251,8 +1251,8 @@ namespace Jvedio
                 ConfigManager.Restore();
 
                 // 基本
-                vieModel.OpenDataBaseDefault = true;
-                vieModel.ScanOnStartUp = true;
+                vieModel.OpenDataBaseDefault = false;
+                vieModel.ScanOnStartUp = false;
                 vieModel.CloseToTaskBar = true;
 
                 ConfigManager.Settings.DelInfoAfterDelFile = true;

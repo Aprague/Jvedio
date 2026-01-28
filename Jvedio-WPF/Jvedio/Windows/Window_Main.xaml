@@ -342,13 +342,21 @@
                                 Grid.Row="2"
                                 Margin="0,0,5,5"
                                 VerticalAlignment="Bottom">
-                                <Image
-                                    Height="20"
-                                    Margin="20,0"
+                                <Button x:Name="MyImageButton"
+                                    Width="Auto"
+                                    Height="Auto"
+                                    BorderThickness="0"
+                                    Background="Transparent"
                                     HorizontalAlignment="Left"
-                                    VerticalAlignment="Center"
-                                    Source="/Resources/Picture/Title.png"
-                                    ToolTip="Jvedio" />
+                                    Style="{StaticResource ButtonPrimary}"
+                                    ToolTip="刷新(左键新增/右键删除)"
+                                    PreviewMouseLeftButtonDown="OnLeftClick"
+                                    PreviewMouseRightButtonDown="OnRightClick">
+                                    <Image Height="20"
+                                        Margin="10,0"
+                                        VerticalAlignment="Center"
+                                        Source="/Resources/Picture/Title.png" />
+                                </Button>
 
                                 <super:HoverPath
                                     Width="30"
