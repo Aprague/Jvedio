@@ -138,6 +138,36 @@
                         <ToggleButton
                             Width="20"
                             Height="20"
+                            Margin="0,3,60,0"
+                            Padding="0"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Panel.ZIndex="20"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="RevertTagStampsSelected"
+                            IsChecked="false"
+                            Style="{StaticResource FlatToggleButton}">
+
+                            <Border
+                                Margin="0"
+                                CornerRadius="5"
+                                Tag="{DynamicResource Window.Title.Hover.Background}">
+                                <Viewbox
+                                    Width="18"
+                                    Height="auto"
+                                    VerticalAlignment="Center">
+                                    <Path
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Data="M453.8 531.7H140.1c-22.9 0-41.5 18.6-41.5 41.5v313.7c0 22.9 18.6 41.5 41.5 41.5h313.7c22.9 0 41.5-18.6 41.5-41.5V573.2c0-22.9-18.7-41.5-41.5-41.5z m-2.5 352.7H142.6V575.7h308.7v308.7zM120.6 426.4h209.2c12.2 0 22-9.8 22-22s-9.8-22-22-22H171.5c9.3-133.4 120.8-239 256.5-239 12.2 0 22-9.8 22-22s-9.8-22-22-22c-80.4 0-156.1 31.3-212.9 88.2-33.3 33.3-57.8 73.1-72.5 116.4V195.2c0-12.2-9.8-22-22-22s-22 9.8-22 22v209.2c0 12.1 9.8 22 22 22zM905.3 601.3H696c-12.2 0-22 9.8-22 22s9.8 22 22 22h158.3c-9.3 133.4-120.8 239-256.5 239-12.2 0-22 9.8-22 22s9.8 22 22 22c80.4 0 156.1-31.3 212.9-88.2 33.3-33.3 57.8-73.1 72.5-116.4v108.8c0 12.2 9.8 22 22 22s22-9.8 22-22V623.3c0.1-12.1-9.8-22-21.9-22zM887.5 98.5H573.8c-22.9 0-41.5 18.6-41.5 41.5v313.7c0 22.9 18.6 41.5 41.5 41.5h313.7c22.9 0 41.5-18.6 41.5-41.5V140c0-22.9-18.7-41.5-41.5-41.5z"
+                                        Fill="{DynamicResource Window.Foreground}" />
+                                </Viewbox>
+                            </Border>
+                        </ToggleButton>
+                        <ToggleButton
+                            Width="20"
+                            Height="20"
                             Margin="0,3,32,0"
                             Padding="0"
                             HorizontalAlignment="Right"

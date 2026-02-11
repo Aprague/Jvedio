@@ -533,6 +533,39 @@ namespace Jvedio.Core.UserControls
             ApplyFilter();
         }
 
+        private void RevertTagStampsSelected(object sender, RoutedEventArgs e)
+        {
+            ToggleButton toggleButton = sender as ToggleButton;
+            bool revertChecked = (bool)toggleButton.IsChecked;
+
+            // 1. 先处理UI层面的选中状态取反
+            ItemsControl itemsControl = TagStampItemsControl;
+            for (int i = 0; i < itemsControl.Items.Count; i++) {
+                ContentPresenter presenter = (ContentPresenter)itemsControl.ItemContainerGenerator.ContainerFromItem(itemsControl.Items[i]);
+                if (presenter == null)
+                    continue;
+
+                PathCheckButton button = VisualHelper.FindElementByName<PathCheckButton>(presenter, "pathCheckButton");
+                if (button == null)
+                    continue;
+
+                // 关键修正1：UI层面直接取反当前状态，而非统一设为revertChecked
+                button.IsChecked = !button.IsChecked;
+            }
+
+            // 2. 处理数据层面的选中状态取反（核心修正）
+            // 先获取当前所有标签的完整列表
+            List<TagStamp> allTagStamps = TagStamp.TagStamps.ToList();
+            if (allTagStamps != null && allTagStamps.Count > 0) {
+                // 遍历所有标签，对每个标签的Selected状态直接取反
+                foreach (var item in allTagStamps) {
+                    item.Selected = !item.Selected;
+                }
+                // 更新全局的标签列表（确保数据同步）
+                TagStamp.TagStamps = allTagStamps;
+            }
+            ApplyFilter();
+        }
 
         private void TagStamp_Expand(object sender, EventArgs e)
         {
