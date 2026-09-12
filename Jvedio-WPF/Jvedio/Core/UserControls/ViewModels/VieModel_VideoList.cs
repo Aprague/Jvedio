@@ -429,9 +429,11 @@ namespace Jvedio.Core.UserControls.ViewModels
             get { return _PageSize; }
 
             set {
-                _PageSize = value;
-                RaisePropertyChanged();
-                ConfigManager.VideoConfig.PageSize = value;
+                if (_PageSize != value) {
+                    _PageSize = value;
+                    RaisePropertyChanged();
+                    ConfigManager.VideoConfig.PageSize = value;
+                }
             }
         }
 

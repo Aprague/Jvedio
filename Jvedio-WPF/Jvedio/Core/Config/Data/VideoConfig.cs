@@ -17,7 +17,7 @@ namespace Jvedio.Core.Config.Data
             SortType = 0;
             SortDescending = false;
             OnlyShowSubSection = false;
-            PageSize = 20;
+            PageSize = 50;
 
             DisplayID = true;
             DisplayTitle = true;

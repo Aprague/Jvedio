@@ -345,6 +345,17 @@ namespace Jvedio.Core.UserControls
             vieModel.LoadData();
         }
 
+        private void PageSizeTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (int.TryParse((sender as TextBox)?.Text, out int pageSize) && pageSize > 0)
+            {
+                vieModel.PageSize = pageSize;
+                vieModel.CurrentPage = 1;
+                vieModel.PageQueue.Enqueue(1);
+                vieModel.LoadData();
+            }
+        }
+
         private void MovieItemsControl_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
             if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)) {

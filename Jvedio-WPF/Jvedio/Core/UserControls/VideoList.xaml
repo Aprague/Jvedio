@@ -902,10 +902,43 @@
             <Grid Grid.Column="1" HorizontalAlignment="Right">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="auto" />
+                    <ColumnDefinition Width="auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
+
+                <!-- 每页页码输入 -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,5,0">
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontSize="13"
+                        Foreground="{DynamicResource Window.Foreground}"
+                        Style="{StaticResource BaseTextBlock}"
+                        Text="每页" />
+                    <TextBox
+                        Name="pageSizeTextBox"
+                        Width="50"
+                        Margin="5,0,0,0"
+                        Padding="0,2"
+                        VerticalAlignment="Center"
+                        HorizontalContentAlignment="Center"
+                        Background="Transparent"
+                        BorderBrush="{DynamicResource Window.Side.Background}"
+                        BorderThickness="1"
+                        FontSize="13"
+                        Foreground="{DynamicResource Window.Foreground}"
+                        Text="{Binding PageSize, Mode=OneWay}"
+                        TextChanged="PageSizeTextBox_TextChanged" />
+                    <TextBlock
+                        Margin="3,0,0,0"
+                        VerticalAlignment="Center"
+                        FontSize="13"
+                        Foreground="{DynamicResource Window.Foreground}"
+                        Style="{StaticResource BaseTextBlock}"
+                        Text="条" />
+                </StackPanel>
+
                 <Border
-                    Grid.Column="0"
+                    Grid.Column="1"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
                     Background="{DynamicResource Window.Side.Background}"
@@ -915,7 +948,7 @@
                         FontSize="13"
                         Style="{StaticResource BaseTextBlock}">
                         <TextBlock.Text>
-                            <MultiBinding StringFormat="{} {0}/{1}">
+                            <MultiBinding StringFormat="{}{0}/{1}">
                                 <Binding Path="CurrentCount" />
                                 <Binding Path="TotalCount" />
                             </MultiBinding>
@@ -927,12 +960,10 @@
                 <!--  页码  -->
                 <super:Pagination
                     Name="pagination"
-                    Grid.Column="1"
-                    CurrentPage="{Binding CurrentPage, Mode=OneWay}"
+                    Grid.Column="2"
                     CurrentPageChange="Pagination_CurrentPageChange"
+                    CurrentPage="{Binding CurrentPage, Mode=OneWay}"
                     PageSize="{Binding PageSize, Mode=TwoWay}"
-                    PageSizes="[10,20,40,50,100]"
-                    ShowCombobox="{Binding PaginationCombobox, Source={x:Static config:ConfigManager.Main}}"
                     Style="{StaticResource NormalPagination}"
                     Total="{Binding TotalCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             </Grid>
