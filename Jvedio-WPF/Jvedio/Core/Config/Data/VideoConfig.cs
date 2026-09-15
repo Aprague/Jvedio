@@ -32,7 +32,7 @@ namespace Jvedio.Core.Config.Data
 
             ActorEditMode = false;
             ActorSortDescending = true;
-            ShowFilter = true;
+            ShowFilter = false;
             ActorShowCount = true;
             BlurBackground = true;
 

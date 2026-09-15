@@ -11,6 +11,7 @@ using Jvedio.Entity.Common;
 using Jvedio.Upgrade;
 using Jvedio.ViewModel;
 using Jvedio.ViewModels;
+using Newtonsoft.Json;
 using SuperControls.Style;
 using SuperControls.Style.CSFile.Interfaces;
 using SuperControls.Style.Plugin;
@@ -737,7 +738,48 @@ namespace Jvedio
         {
             string[] dragdropFiles = (string[])e.Data.GetData(DataFormats.FileDrop);
             vieModel.DragInFile = false;
+
+            // 将拖入的文件夹路径添加到当前数据库的 ScanPath 中
+            foreach (var item in dragdropFiles) {
+                if (!FileHelper.IsFile(item)) {
+                    AddPathToCurrentDb(item);
+                }
+            }
+
             AddScanTask(dragdropFiles);
+        }
+
+        /// <summary>
+        /// 将路径添加到当前数据库的 ScanPath 中
+        /// </summary>
+        private void AddPathToCurrentDb(string path)
+        {
+            if (vieModel?.CurrentAppDataBase == null)
+                return;
+
+            AppDatabase database = vieModel.CurrentAppDataBase;
+            List<string> scanPaths = JsonUtils.TryDeserializeObject<List<string>>(database.ScanPath);
+            if (scanPaths == null)
+                scanPaths = new List<string>();
+
+            if (!scanPaths.Contains(path) && !scanPaths.IsIntersectWith(path)) {
+                scanPaths.Add(path);
+                database.ScanPath = JsonConvert.SerializeObject(scanPaths);
+
+                // 更新数据库
+                MapperManager.appDatabaseMapper.UpdateById(database);
+
+                // 同步更新到 vieModel 的缓存
+                List<AppDatabase> appDatabases = vieModel.DataBases.ToList();
+                if (appDatabases != null) {
+                    foreach (var db in appDatabases) {
+                        if (db.DBId == database.DBId) {
+                            db.ScanPath = database.ScanPath;
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         private void SaveConfigValue()
