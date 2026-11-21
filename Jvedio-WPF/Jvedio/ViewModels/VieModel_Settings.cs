@@ -1,16 +1,13 @@
-﻿using Jvedio.Core.Crawler;
-using Jvedio.Core.Enums;
-using Jvedio.Core.Plugins.Crawler;
+﻿using Jvedio.Core.Enums;
+
 using Jvedio.Entity;
 using Jvedio.Entity.Common;
-using SuperControls.Style.Plugin;
 using SuperUtils.Common;
 using SuperUtils.WPF.VieModel;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Threading.Tasks;
 using static Jvedio.App;
 
 namespace Jvedio.ViewModel
@@ -67,16 +64,15 @@ namespace Jvedio.ViewModel
         }
 
 
-        private ObservableCollection<Server> _Servers;
-
-        public ObservableCollection<Server> Servers {
-            get { return _Servers; }
-
-            set {
-                _Servers = value;
-                RaisePropertyChanged();
-            }
-        }
+        // #region "Server"
+        // Removed: Server and PluginMetaData were network-related (crawler/server management)
+        // private ObservableCollection<Server> _Servers;
+        // public ObservableCollection<Server> Servers { get => _Servers; set { _Servers = value; RaisePropertyChanged(); } }
+        // private PluginMetaData _CurrentPlugin;
+        // public PluginMetaData CurrentPlugin { get => _CurrentPlugin; set { _CurrentPlugin = value; RaisePropertyChanged(); } }
+        // private bool _ShowCurrentPlugin = false;
+        // public bool ShowCurrentPlugin { get => _ShowCurrentPlugin; set { _ShowCurrentPlugin = value; RaisePropertyChanged(); } }
+        // #endregion
 
         private ObservableCollection<string> _ScanPath;
 
@@ -205,115 +201,7 @@ namespace Jvedio.ViewModel
             }
         }
 
-        private Dictionary<string, ObservableCollection<CrawlerServer>> _CrawlerServers = new Dictionary<string, ObservableCollection<CrawlerServer>>();
-
-        public Dictionary<string, ObservableCollection<CrawlerServer>> CrawlerServers {
-            get { return _CrawlerServers; }
-
-            set {
-                _CrawlerServers = value;
-                RaisePropertyChanged();
-            }
-        }
-        private PluginMetaData _CurrentPlugin;
-
-        public PluginMetaData CurrentPlugin {
-            get { return _CurrentPlugin; }
-
-            set {
-                _CurrentPlugin = value;
-                RaisePropertyChanged();
-            }
-        }
-
-        private ObservableCollection<string> _DisplayCrawlerServers = new ObservableCollection<string>();
-
-        public ObservableCollection<string> DisplayCrawlerServers {
-            get { return _DisplayCrawlerServers; }
-
-            set {
-                _DisplayCrawlerServers = value;
-                RaisePropertyChanged();
-            }
-        }
-        private bool _ShowCurrentPlugin = false;
-
-        public bool ShowCurrentPlugin {
-            get { return _ShowCurrentPlugin; }
-
-            set {
-                _ShowCurrentPlugin = value;
-                RaisePropertyChanged();
-            }
-        }
-
-        private string _ProxyServer = ConfigManager.ProxyConfig.Server;
-
-        public string ProxyServer {
-            get { return _ProxyServer; }
-
-            set {
-                _ProxyServer = value;
-                RaisePropertyChanged();
-            }
-        }
-
-        private int _ProxyPort = (int)ConfigManager.ProxyConfig.Port;
-
-        public int ProxyPort {
-            get { return _ProxyPort; }
-
-            set {
-                _ProxyPort = value;
-                RaisePropertyChanged();
-            }
-        }
-
-        private string _ProxyUserName = ConfigManager.ProxyConfig.UserName;
-
-        public string ProxyUserName {
-            get { return _ProxyUserName; }
-
-            set {
-                _ProxyUserName = value;
-                RaisePropertyChanged();
-            }
-        }
-
-        private string _ProxyPwd = ConfigManager.ProxyConfig.Password;
-
-        public string ProxyPwd {
-            get {
-                return _ProxyPwd;
-            }
-
-            set {
-                _ProxyPwd = value;
-                RaisePropertyChanged();
-            }
-        }
-
-        private TaskStatus _TestProxyStatus;
-
-        public TaskStatus TestProxyStatus {
-            get { return _TestProxyStatus; }
-
-            set {
-                _TestProxyStatus = value;
-                RaisePropertyChanged();
-            }
-        }
-
-        private int _HttpTimeout = (int)ConfigManager.ProxyConfig.HttpTimeout;
-
-        public int HttpTimeout {
-            get { return _HttpTimeout; }
-
-            set {
-                _HttpTimeout = value;
-                RaisePropertyChanged();
-            }
-        }
+        // PluginMetaData, CurrentPlugin, ShowCurrentPlugin removed: network-related (crawler plugin management)
 
         #endregion
 
@@ -525,18 +413,6 @@ namespace Jvedio.ViewModel
                 RaisePropertyChanged();
             }
         }
-
-        private string _CurrentLanguage = ConfigManager.Settings.CurrentLanguage;
-
-        public string CurrentLanguage {
-            get { return _CurrentLanguage; }
-
-            set {
-                _CurrentLanguage = value;
-                RaisePropertyChanged();
-            }
-        }
-
 
 
         #endregion
@@ -834,7 +710,7 @@ namespace Jvedio.ViewModel
         {
             OpenDataBaseDefault = false;
             ScanOnStartUp = false;
-            SetServers();
+            // SetServers removed: was network-related (server management)
             SetBasePicPaths();
             LoadNfoParseData();
             Logger.Info("init view model setting ok");
@@ -863,64 +739,7 @@ namespace Jvedio.ViewModel
 
             if (ScanPath.Count == 0)
                 ScanPath = null;
-            Servers = new ObservableCollection<Server>();
-        }
-
-
-
-        public void SetServers()
-        {
-            CrawlerServers = new Dictionary<string, ObservableCollection<CrawlerServer>>();
-            foreach (PluginMetaData plugin in CrawlerManager.PluginMetaDatas) {
-                string pluginID = plugin.PluginID;
-                if (string.IsNullOrEmpty(pluginID))
-                    continue;
-                string name = plugin.PluginName;
-                CrawlerServer crawlerServer = ConfigManager.ServerConfig.CrawlerServers
-                    .Where(arg => arg.PluginID.Equals(pluginID)).FirstOrDefault();
-                if (crawlerServer == null) {
-                    crawlerServer = new CrawlerServer();
-                    crawlerServer.PluginID = pluginID;
-                    CrawlerServers.Add(pluginID, null);
-                } else {
-                    ObservableCollection<CrawlerServer> crawlers = new ObservableCollection<CrawlerServer>();
-                    ConfigManager.ServerConfig.CrawlerServers.Where(arg => arg.PluginID.Equals(pluginID)).
-                        ToList().ForEach(t => crawlers.Add(t));
-                    if (!CrawlerServers.ContainsKey(pluginID))
-                        CrawlerServers.Add(pluginID, crawlers);
-                }
-            }
-
-            DisplayCrawlerServers = new ObservableCollection<string>();
-            foreach (string key in CrawlerServers.Keys) {
-                int len = PluginType.Crawler.ToString().Length + 1;
-                DisplayCrawlerServers.Add(key.Substring(len));
-            }
-        }
-
-        public bool SaveServers(Action<string> callback = null)
-        {
-            List<CrawlerServer> list = new List<CrawlerServer>();
-            foreach (string key in CrawlerServers.Keys) {
-                List<CrawlerServer> crawlerServers = CrawlerServers[key]?.ToList();
-                if (crawlerServers == null || crawlerServers.Count <= 0)
-                    continue;
-                foreach (CrawlerServer server in crawlerServers) {
-                    if (!server.IsHeaderProper()) {
-                        string format = "{\"UserAgent\":\"value\",...}";
-                        callback?.Invoke($"【{key}】 刮削器处地址为 {server.Url} 的 Headers 不合理，格式必须为：{format}");
-                        return false;
-                    }
-
-                    if (server.Headers == null)
-                        server.Headers = string.Empty;
-                    list.Add(server);
-                }
-            }
-
-            ConfigManager.ServerConfig.CrawlerServers = list;
-            ConfigManager.ServerConfig.Save();
-            return true;
+            // Servers removed: network-related (server management)
         }
 
 

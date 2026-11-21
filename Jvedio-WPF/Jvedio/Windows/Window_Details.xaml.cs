@@ -1,7 +1,6 @@
 ﻿using Jvedio.Core.CustomEventArgs;
 using Jvedio.Core.FFmpeg;
 using Jvedio.Core.Media;
-using Jvedio.Core.Net;
 using Jvedio.Core.Scan;
 using Jvedio.Core.UserControls;
 using Jvedio.Entity;
@@ -139,8 +138,6 @@ namespace Jvedio
 
         private void BindEvent()
         {
-            DownLoadTask.onDownloadPreview += onDownloadPreview;
-            DownLoadTask.onDownloadSuccess += onDownloadSuccess;
             ScreenShotTask.onScreenShotCompleted += onScreenShotCompleted;
             Filter.onTagStampDelete += RemoveTag;
             Filter.onTagStampRefresh += onRefreshTagStemp;
@@ -156,25 +153,6 @@ namespace Jvedio
                 return;
             Video video = vieModel.CurrentVideo;
             Video.RefreshTagStamp(ref video, tagID, true);
-        }
-
-        private void onDownloadPreview(long dataID, string path, byte[] fileByte)
-        {
-            Dispatcher.Invoke(() => {
-                lock (RefreshLock) {
-                    OnDownloadPreview(dataID, path, fileByte);
-                }
-            });
-        }
-
-        private void onDownloadSuccess(DownLoadTask task)
-        {
-            Dispatcher.Invoke(() => {
-                lock (RefreshLock) {
-                    if (DataID == task.DataID)
-                        Refresh();
-                }
-            });
         }
 
         private void onScreenShotCompleted(bool ok, long dataId)
@@ -389,30 +367,10 @@ namespace Jvedio
 
         public void DownLoad(object sender, RoutedEventArgs e)
         {
-            Video video = vieModel.CurrentVideo;
-            if (video == null || video.DataID <= 0)
-                return;
-            DownLoadTask.DownloadVideo(video);
+            // Network download removed - local-only mode
         }
 
 
-
-        public void OnDownloadPreview(long dataID, string path, byte[] fileByte)
-        {
-            if (dataID.Equals(vieModel.CurrentVideo.DataID) && !vieModel.ShowScreenShot &&
-                File.Exists(path) && fileByte != null) {
-                // 加入到列表
-                if (vieModel.CurrentVideo.PreviewImagePathList == null)
-                    vieModel.CurrentVideo.PreviewImagePathList = new ObservableCollection<string>();
-                if (vieModel.CurrentVideo.PreviewImageList == null)
-                    vieModel.CurrentVideo.PreviewImageList = new ObservableCollection<BitmapSource>();
-                vieModel.CurrentVideo.PreviewImagePathList.Add(path);
-                vieModel.CurrentVideo.PreviewImageList.Add(ImageHelper.BitmapImageFromByte(fileByte));
-
-                vieModel.PreviewImageCount = vieModel.CurrentVideo.PreviewImagePathList.Count;
-            }
-
-        }
 
         public void GetScreenGif(object sender, RoutedEventArgs e)
         {
@@ -1034,28 +992,7 @@ namespace Jvedio
 
         private void ShowMagnets()
         {
-            if (ConfigManager.Settings.TeenMode
-                || vieModel.CurrentVideo.Magnets == null
-                || vieModel.CurrentVideo.Magnets.Count == 0)
-                return;
-
-            CopyMagnetsMenuItem.Items.Clear();
-            foreach (var magnet in vieModel.CurrentVideo.Magnets) {
-                if (magnet.Tags == null)
-                    continue;
-                MenuItem menuItem = new MenuItem();
-                string tag = string.Empty;
-                if (magnet.Tags.Count > 0)
-                    tag = "（" + string.Join(" ", magnet.Tags) + "）";
-
-                menuItem.Header = $"{magnet.Releasedate} {tag} {magnet.Size.ToProperFileSize()} {magnet.Title}";
-                menuItem.ToolTip = menuItem.Header;
-                menuItem.Click += (s, ev) => {
-                    ClipBoard.TrySetDataObject(magnet.MagnetLink);
-                    MessageNotify.Success(LangManager.GetValueByKey("Message_Copied"));
-                };
-                CopyMagnetsMenuItem.Items.Add(menuItem);
-            }
+            // Magnets removed: network-related magnet link handling
         }
 
         private void DisposeImage()

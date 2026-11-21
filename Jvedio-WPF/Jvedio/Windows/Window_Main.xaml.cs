@@ -2,19 +2,15 @@
 using Jvedio.Core.Enums;
 using Jvedio.Core.Global;
 using Jvedio.Core.Media;
-using Jvedio.Core.Plugins.Crawler;
 using Jvedio.Core.Scan;
-using Jvedio.Core.Server;
 using Jvedio.Core.UserControls;
 using Jvedio.Entity;
 using Jvedio.Entity.Common;
-using Jvedio.Upgrade;
 using Jvedio.ViewModel;
 using Jvedio.ViewModels;
 using Newtonsoft.Json;
 using SuperControls.Style;
 using SuperControls.Style.CSFile.Interfaces;
-using SuperControls.Style.Plugin;
 using SuperControls.Style.Windows;
 using SuperUtils.Common;
 using SuperUtils.CustomEventArgs;
@@ -36,7 +32,6 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 using static Jvedio.App;
-using static Jvedio.Core.Global.UrlManager;
 using static Jvedio.MapperManager;
 using static Jvedio.Window_Settings;
 using static SuperUtils.WPF.VisualTools.WindowHelper;
@@ -83,15 +78,13 @@ namespace Jvedio
 
         #region "属性"
 
-        private Window_Server window_Server { get; set; }
+        // Window_Server removed: network-related server management
+
         private bool CanDragTabItem { get; set; } = false;
 
         private FrameworkElement CurrentDragElement { get; set; }
 
         private Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager TaskbarInstance { get; set; }
-
-        private SuperControls.Style.Plugin.Window_Plugin window_Plugin { get; set; }
-
 
         private Window_Details windowDetails { get; set; }
 
@@ -139,7 +132,6 @@ namespace Jvedio
         public void Dispose()
         {
             SaveConfigValue();
-            DownloadManager.CancelAll();
             ScreenShotManager.CancelAll();
             ScanManager.CancelAll();
         }
@@ -148,12 +140,11 @@ namespace Jvedio
         private void Window_ContentRendered(object sender, EventArgs e)
         {
             ConfigFirstRun();
-            InitTheme();
+            // InitTheme removed: theme selector creates plugins/themes folder
             //InitNotice();
             InitDataBases();
             BindingEventAfterRender();
             //InitUpgrade();
-            CheckServerStatus();
             InitAvalonEdit();
             InitSideMenu();
         }
@@ -211,11 +202,6 @@ namespace Jvedio
             };
         }
 
-        public async void CheckServerStatus()
-        {
-            vieModel.ServerStatus = await ServerManager.CheckStatus();
-        }
-
         public void SetAllSelect()
         {
             List<VideoList> videoLists = vieModel.TabItemManager.GetAllVideoList();
@@ -228,46 +214,9 @@ namespace Jvedio
         }
 
 
-        public void InitTheme()
-        {
-            foreach (var item in TransParentBackGround) {
-                ThemeSelectorDefault.AddTransParentColor(item);
-            }
-            ThemeSelectorDefault.SetThemeConfig(ConfigManager.ThemeConfig.ThemeIndex,
-                ConfigManager.ThemeConfig.ThemeID);
-            ThemeSelectorDefault.onThemeChanged += (ThemeIdx, ThemeID) => {
-                ConfigManager.ThemeConfig.ThemeIndex = ThemeIdx;
-                ConfigManager.ThemeConfig.ThemeID = ThemeID;
-                ConfigManager.ThemeConfig.Save();
-                SetAllSelect();
-            };
-            ThemeSelectorDefault.onBackGroundImageChanged += (image) => {
-                ImageBackground.Source = image;
-                StyleManager.BackgroundImage = image;
-            };
-            ThemeSelectorDefault.onSetBgColorTransparent += () => {
-                BorderTitle.Background = Brushes.Transparent;
-            };
-
-            ThemeSelectorDefault.onReSetBgColorBinding += () => {
-                BorderTitle.SetResourceReference(Control.BackgroundProperty, "Window.Title.Background");
-            };
-
-            ThemeSelectorDefault.InitThemes();
-        }
-
-
-        public void InitUpgrade()
-        {
-            UpgradeHelper.Init(this);
-            CheckUpgrade(); // 检查更新
-        }
-
         private void BindingEventAfterRender()
         {
             SetComboboxID();
-            App.DownloadManager.onRunning += onDownloading;
-            App.DownloadManager.onLongDelay += onLoadDelay;
             Main.OnRecvWinMsg += onRecvWinMsg;
             Video.onPlayVideo += () => vieModel.Statistic();
             ActorList.onStatistic += () => vieModel.Statistic();
@@ -323,29 +272,6 @@ namespace Jvedio
         {
             string message = (e as MessageCallBackEventArgs).Message;
             int.TryParse(message, out int value);
-        }
-
-        private void onDownloading()
-        {
-            double progress = App.DownloadManager.Progress;
-            if (progress is double.NaN)
-                progress = 0;
-            vieModel.DownLoadProgress = progress;
-            if (progress < 100)
-                vieModel.DownLoadVisibility = Visibility.Visible;
-            else
-                vieModel.DownLoadVisibility = Visibility.Hidden;
-
-            // 任务栏进度条
-            Dispatcher.Invoke(() => {
-                if (Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager.IsPlatformSupported && TaskbarInstance != null) {
-                    TaskbarInstance.SetProgressValue((int)progress, 100, this);
-                    if (progress >= 100 || progress <= 0)
-                        TaskbarInstance.SetProgressState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.NoProgress, this);
-                    else
-                        TaskbarInstance.SetProgressState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.Normal, this);
-                }
-            });
         }
 
         public void SetComboboxID()
@@ -532,28 +458,6 @@ namespace Jvedio
         }
 
 
-        /// <summary>
-        /// 初始化公告
-        /// </summary>
-        public void InitNotice()
-        {
-            noticeViewer.SetConfig(UrlManager.NoticeUrl, ConfigManager.Main.LatestNotice);
-            noticeViewer.onError += (error) => {
-                App.Logger?.Error(error);
-            };
-
-            noticeViewer.onShowMarkdown += (markdown) => {
-                //MessageCard.Info(markdown);
-            };
-            noticeViewer.onNewNotice += (newNotice) => {
-                ConfigManager.Main.LatestNotice = newNotice;
-                ConfigManager.Main.Save();
-            };
-
-            noticeViewer.BeginCheckNotice();
-        }
-
-
 
         #region "监听文件变动"
 
@@ -664,49 +568,7 @@ namespace Jvedio
 
             if (App.ScreenShotManager.RunningCount > 0)
                 App.ScreenShotManager.CancelAll();
-
-            if (App.DownloadManager.RunningCount > 0)
-                App.DownloadManager.CancelAll();
-
         }
-
-        private void OpenFeedBack(object sender, RoutedEventArgs e)
-        {
-            FileHelper.TryOpenUrl(FeedBackUrl);
-        }
-
-        private void OpenHelp(object sender, RoutedEventArgs e)
-        {
-            FileHelper.TryOpenUrl(WikiUrl);
-        }
-
-        private void OpenJvedioWebPage(object sender, RoutedEventArgs e)
-        {
-            FileHelper.TryOpenUrl(WebPageUrl);
-        }
-
-        private async void CheckUpgrade()
-        {
-            // 启动后检查更新
-            try {
-                await Task.Delay(UpgradeHelper.AUTO_CHECK_UPGRADE_DELAY);
-                (string LatestVersion, string ReleaseDate, string ReleaseNote) result = await UpgradeHelper.GetUpgradeInfo();
-                string remote = result.LatestVersion;
-                string ReleaseDate = result.ReleaseDate;
-                if (!string.IsNullOrEmpty(remote)) {
-                    string local = App.GetLocalVersion(false);
-                    if (local.CompareTo(remote) < 0) {
-                        bool opened = (bool)new MsgBox(
-                            $"存在新版本\n版本：{remote}\n日期：{ReleaseDate}").ShowDialog();
-                        if (opened)
-                            UpgradeHelper.OpenWindow();
-                    }
-                }
-            } catch (Exception ex) {
-                Console.WriteLine(ex.Message);
-            }
-        }
-
 
         public void ShowSameString(string str, LabelType labelType)
         {
@@ -1067,76 +929,7 @@ namespace Jvedio
         }
 
 
-        private void ShowUpgradeWindow(object sender, RoutedEventArgs e)
-        {
-            UpgradeHelper.OpenWindow();
-        }
-
-        private void ShowAbout(object sender, RoutedEventArgs e)
-        {
-            App.ShowAbout();
-        }
-
-        private void ShowPluginWindow(object sender, RoutedEventArgs e)
-        {
-            if (window_Plugin == null || window_Plugin.IsClosed) {
-                SuperControls.Style.Plugin.PluginConfig config = new SuperControls.Style.Plugin.PluginConfig();
-                config.PluginBaseDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
-                config.RemoteUrl = UrlManager.GetPluginUrl();
-                window_Plugin = new SuperControls.Style.Plugin.Window_Plugin();
-                window_Plugin.SetConfig(config);
-
-                window_Plugin.OnEnabledChange += (data, enabled) => {
-                    return true;
-                };
-
-                window_Plugin.OnBeginDelete += (PluginMetaData data) => {
-                    PluginType pluginType = data.PluginType;
-
-                    if (pluginType == PluginType.Crawler) {
-                        List<string> list = JsonUtils.TryDeserializeObject<List<string>>(ConfigManager.PluginConfig.DeleteList);
-                        if (list == null)
-                            list = new List<string>();
-                        if (!list.Contains(data.PluginID)) {
-                            list.Add(data.PluginID);
-                            ConfigManager.PluginConfig.DeleteList = JsonUtils.TrySerializeObject(list);
-                            ConfigManager.PluginConfig.Save();
-                            MessageNotify.Info("已加入待删除列表，重启后生效");
-                        } else {
-                            MessageNotify.Warning("已经在待删除列表里");
-                        }
-                    }
-                    return false;
-                };
-                window_Plugin.OnDeleteCompleted += (data) => {
-                    PluginType pluginType = data.PluginType;
-                    if (pluginType == PluginType.Theme) {
-                        ThemeSelectorDefault.InitThemes();
-                    } else if (pluginType == PluginType.Crawler) {
-                        CrawlerManager.Init(false);
-                    }
-                };
-
-                window_Plugin.OnBeginDownload += (data) => {
-                    return true;
-                };
-                window_Plugin.OnDownloadCompleted += (data) => {
-                    // 根据类型，通知到对应模块
-                    PluginType pluginType = data.PluginType;
-                    if (pluginType == PluginType.Theme) {
-                        ThemeSelectorDefault.InitThemes();
-                    } else if (pluginType == PluginType.Crawler) {
-                        // 如果是新下载，则可以直接使用
-                        // 如果是更新，则需要重启
-                        CrawlerManager.Init(false);
-                    }
-                };
-            }
-            window_Plugin.Show();
-            window_Plugin.BringIntoView();
-            window_Plugin.Focus();
-            window_Plugin.Activate();
-        }
+        // ShowAbout click handler removed (About button removed from UI)
 
         private void ShowSettingsWindow(object sender, RoutedEventArgs e)
         {
@@ -1162,33 +955,9 @@ namespace Jvedio
         public bool IsTaskRunning()
         {
             return (App.ScreenShotManager.RunningCount > 0 ||
-                App.ScanManager.RunningCount > 0 ||
-                App.DownloadManager.RunningCount > 0);
+                App.ScanManager.RunningCount > 0);
         }
 
-
-        private void OpenServer(object sender, RoutedEventArgs e)
-        {
-            MessageNotify.Info("开发中");
-            return;
-
-            //if (window_Server != null)
-            //    window_Server.Close();
-            //window_Server = new Window_Server();
-
-            //window_Server.OnServerStatusChanged += (status) => {
-            //    vieModel.ServerStatus = status;
-            //};
-
-            //window_Server.Owner = this;
-            //window_Server.ShowDialog();
-
-        }
-
-        private void OpenServerWindow(object sender, MouseButtonEventArgs e)
-        {
-            OpenServer(null, null);
-        }
 
         private void GoToStartUp(object sender, RoutedEventArgs e)
         {

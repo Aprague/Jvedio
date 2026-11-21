@@ -1,10 +1,8 @@
-﻿using Google.Protobuf.WellKnownTypes;
-using Jvedio.Core.CustomEventArgs;
+﻿using Jvedio.Core.CustomEventArgs;
 using Jvedio.Core.Enums;
 using Jvedio.Core.FFmpeg;
 using Jvedio.Core.Global;
 using Jvedio.Core.Media;
-using Jvedio.Core.Net;
 using Jvedio.Core.UserControls.ViewModels;
 using Jvedio.Entity;
 using Jvedio.Entity.Common;
@@ -161,7 +159,6 @@ namespace Jvedio.Core.UserControls
             vieModel.onPageChange += (totalCount) => pagination.Total = totalCount;
             this.onInitTagStamps += this.filter.InitTagStamp;
             VieModel_VideoList.onSearchingChange += onSearchingChange;
-            DownLoadTask.onDownloadSuccess += onDownloadSuccess;
             ScreenShotTask.onScreenShotCompleted += onScreenShotCompleted;
             Window_Edit.onRefreshData += RefreshData;
         }
@@ -208,18 +205,6 @@ namespace Jvedio.Core.UserControls
                 AutoGenScreenShot(vieModel.CurrentVideoList);
             if (tableData.Visibility == Visibility.Visible && tableData.Items.Count > 0)
                 tableData.ScrollIntoView(tableData.Items[0]);
-        }
-
-        private void onDownloadSuccess(DownLoadTask task)
-        {
-            Dispatcher.Invoke(() => {
-                lock (RefreshLock) {
-                    vieModel.RefreshData(task.DataID);
-                    // 更新图片存在
-                    if (task.Success)
-                        UpdateImageIndex(task.DataID, true, true);
-                }
-            });
         }
 
         private void onScreenShotCompleted(bool ok, long dataID)
@@ -1035,15 +1020,7 @@ namespace Jvedio.Core.UserControls
         private void DownLoadSelectMovie(object sender, RoutedEventArgs e)
         {
             HandleMenuSelected(sender);
-            DownLoadVideo(vieModel.SelectedVideo);
-        }
-
-        public void DownLoadVideo(List<Video> videoList)
-        {
-            foreach (Video video in videoList) {
-                DownLoadTask.DownloadVideo(video);
-            }
-            App.DownloadManager.Start();
+            // Network download removed - local-only mode
         }
 
         private void SetSelectMode(object sender, RoutedEventArgs e)
@@ -1238,7 +1215,7 @@ namespace Jvedio.Core.UserControls
             }
 
             MessageCard.Warning(LangManager.GetValueByKey("CrawlAllWarning"));
-            DownLoadVideo(videos);
+            // DownLoadVideo removed: network-related download functionality
         }
 
 
@@ -1750,16 +1727,8 @@ namespace Jvedio.Core.UserControls
             string searchValue = vieModel.SearchText.ToProperSql();
             if (string.IsNullOrEmpty(searchValue))
                 return;
-            SearchHistory history = new SearchHistory() {
-                SearchMode = mode,
-                SearchValue = searchValue,
-                CreateDate = DateHelper.Now(),
-                SearchField = field,
-                CreateYear = DateTime.Now.Year,
-                CreateMonth = DateTime.Now.Month,
-                CreateDay = DateTime.Now.Day,
-            };
-            searchHistoryMapper.Insert(history);
+            // SearchHistory removed: network-related search history storage
+            // searchHistoryMapper no longer available
         }
 
 

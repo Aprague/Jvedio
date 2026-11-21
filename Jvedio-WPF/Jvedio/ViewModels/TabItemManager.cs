@@ -359,27 +359,6 @@ namespace Jvedio.ViewModels
                     };
 
 
-                    break;
-                case TaskType.Download:
-                    taskList.TaskStatusList = App.DownloadManager.CurrentTasks;
-                    taskList.onRemoveAll += () => App.DownloadManager.RemoveTask(TaskStatus.Canceled | TaskStatus.RanToCompletion);
-                    taskList.onRemoveCancel += () => App.DownloadManager.RemoveTask(TaskStatus.Canceled);
-                    taskList.onRemoveComplete += () => App.DownloadManager.RemoveTask(TaskStatus.RanToCompletion);
-                    taskList.onCancel += App.DownloadManager.CancelTask;
-                    taskList.onCancelAll += App.DownloadManager.CancelAll;
-                    taskList.onShowDetail += (tList, id) => {
-                        string logs = App.DownloadManager.GetTaskLogs(id);
-                        tList.SetLogs(logs);
-                        tList.ShowLog = true;
-                    };
-
-                    taskList.onRestart += App.DownloadManager.Restart;
-
-                    App.DownloadManager.onRunning += () => {
-                        TaskList list = GetTaskListByType(type);
-                        if (list != null)
-                            list.AllTaskProgress = App.DownloadManager.Progress;
-                    };
 
                     break;
 

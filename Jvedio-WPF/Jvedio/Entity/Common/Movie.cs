@@ -8,6 +8,7 @@ using SuperControls.Style;
 using SuperUtils.Common;
 using SuperUtils.IO;
 using SuperUtils.Values;
+using System.Xml;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -274,8 +275,8 @@ namespace Jvedio.Entity
             try {
                 doc.Load(path);
                 rootNode = doc.SelectSingleNode("movie");
-            } catch (Exception ex) {
-                throw ex;
+            } catch (XmlException) {
+                return null;
             }
 
             if (rootNode == null || rootNode.ChildNodes == null || rootNode.ChildNodes.Count == 0)

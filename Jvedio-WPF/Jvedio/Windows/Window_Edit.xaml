@@ -70,7 +70,7 @@
                             <Label Content="{DynamicResource ID}" Style="{StaticResource BaseInfoLabel}" />
                             <super:SearchBox Margin="5" Text="{Binding CurrentVideo.VID, Mode=TwoWay}" />
                         </DockPanel>
-                        <StackPanel Orientation="Horizontal" Visibility="{Binding TeenMode, Source={x:Static config:ConfigManager.Settings}, Mode=TwoWay, Converter={StaticResource BoolToOppositeVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal">
                             <Label Content="{DynamicResource VideoType}" Style="{StaticResource BaseInfoLabel}" />
 
 

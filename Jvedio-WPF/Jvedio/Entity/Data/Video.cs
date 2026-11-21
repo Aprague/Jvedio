@@ -278,8 +278,8 @@ namespace Jvedio.Entity
             }
         }
 
-        [TableField(exist: false)]
-        public List<Magnet> Magnets { get; set; }
+        // [TableField(exist: false)]
+        // public List<Magnet> Magnets { get; set; } // Removed: network-related magnet handling
 
 
         private bool _HasAssociation;
@@ -763,7 +763,7 @@ namespace Jvedio.Entity
             if (!ConfigManager.Settings.SaveInfoToNFO)
                 return;
             string dir = ConfigManager.Settings.NFOSavePath;
-            bool overrideInfo = ConfigManager.DownloadConfig.OverrideInfo;
+            bool overrideInfo = false; // Download config removed - local only mode
 
             string saveName = $"{VID.ToProperFileName()}.nfo";
             if (string.IsNullOrEmpty(VID))
@@ -1173,14 +1173,10 @@ namespace Jvedio.Entity
             video.HasAssociation = false;
             video.AssociationList = new ObservableCollection<long>();
 
-            HashSet<long> set = MapperManager.associationMapper.GetAssociationDatas(video.DataID);
+            // HashSet<long> set = MapperManager.associationMapper.GetAssociationDatas(video.DataID);
+            // Removed: association mapper deleted
 
-            if (set != null) {
-                video.HasAssociation = set.Count > 0;
-                foreach (var item in set.ToArray()) {
-                    video.AssociationList.Add(item);
-                }
-            }
+            video.HasAssociation = false;
         }
 
         public static Video GetById(long dataID)

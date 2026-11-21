@@ -15,13 +15,11 @@ namespace Jvedio.Core.WindowConfig
             AutoGenScreenShot = false;
             CloseToTaskBar = true;
 
-            TeenMode = false;
             AutoAddPrefix = true;
             Prefix = string.Empty;
             AutoBackupPeriodIndex = DEFAULT_BACKUP_PERIOD_INDEX;
             AutoBackup = true;
             DetailShowBg = true;
-            CurrentLanguage = "zh-CN";
             DownloadWhenTitleNull = false;
             IgnoreCertVal = true;
 
@@ -91,8 +89,6 @@ namespace Jvedio.Core.WindowConfig
         public long DefaultDBID { get; set; }
 
 
-        public string CurrentLanguage { get; set; }
-
         public bool SaveInfoToNFO { get; set; }
 
         public bool OverwriteNFO { get; set; }
@@ -100,15 +96,6 @@ namespace Jvedio.Core.WindowConfig
         public string NFOSavePath { get; set; }
 
 
-
-        private bool _TeenMode = true;
-        public bool TeenMode {
-            get { return _TeenMode; }
-            set {
-                _TeenMode = value;
-                RaisePropertyChanged();
-            }
-        }
 
         public bool AutoAddPrefix { get; set; }
 

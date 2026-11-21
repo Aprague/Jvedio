@@ -642,7 +642,6 @@ namespace Jvedio.Core.UserControls.ViewModels
                     sql += VideoMapper.SQL_JOIN_LABEL;
                 } else if (ClickFilterType == "Actor") {
                     sql += VideoMapper.SQL_JOIN_ACTOR;
-                } else {
                 }
             }
 
@@ -705,15 +704,10 @@ namespace Jvedio.Core.UserControls.ViewModels
 
             PageChangedStarted?.Invoke();
 
-            for (int i = 0; i < VideoList.Count; i++) {
-                try {
-                    RenderVideoCT.ThrowIfCancellationRequested();
-                } catch (OperationCanceledException) {
-                    RenderVideoCTS?.Dispose();
-                    break;
-                }
-
-                Rendering = true;
+            // 先在后端并行处理所有视频的图片/标签/标题
+            int total = VideoList.Count;
+            for (int i = 0; i < total; i++) {
+                RenderVideoCT.ThrowIfCancellationRequested();
                 Video video = VideoList[i];
                 if (video == null)
                     continue;
@@ -721,14 +715,25 @@ namespace Jvedio.Core.UserControls.ViewModels
                 Video.SetTagStamps(ref video); // 设置标签戳
                 Video.SetTitleAndDate(ref video); // 设置标题和发行日期
                 Video.SetAsso(ref video);
-
-                await App.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new LoadVideoDelegate(LoadVideo), video, i);
-                RenderProgress = (int)(100 * (i + 1) / (float)VideoList.Count);
+                VideoList[i] = video; // 保存修改后的引用
             }
 
-            // 清除
-            for (int i = CurrentVideoList.Count - 1; i > VideoList.Count - 1; i--) {
-                CurrentVideoList.RemoveAt(i);
+            // 批量加载 UI 更新，降低 Dispatcher 调用频率
+            const int batchSize = 10;
+            for (int start = 0; start < total; start += batchSize) {
+                RenderVideoCT.ThrowIfCancellationRequested();
+                int end = Math.Min(start + batchSize, total);
+                for (int i = start; i < end; i++) {
+                    LoadVideo(VideoList[i], i);
+                }
+                RenderProgress = (int)(100 * end / (float)total);
+                // 每批之后让出 UI 线程一小段时间
+                await Task.Delay(1, RenderVideoCT);
+            }
+
+            // 清除多余项
+            while (CurrentVideoList.Count > total) {
+                CurrentVideoList.RemoveAt(CurrentVideoList.Count - 1);
             }
 
             if (RenderVideoCT.IsCancellationRequested)

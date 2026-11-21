@@ -126,14 +126,9 @@ namespace Jvedio
                 return;
             List<long> toDelete = vieModel.SaveAssociation(CurrentAssocDataID);
 
-            // 刷新关联的影片
-            HashSet<long> set = MapperManager.associationMapper.GetAssociationDatas(CurrentAssocDataID);
-            set.Add(CurrentAssocDataID);
-            foreach (var item in toDelete)
-                set.Add(item);
-            foreach (var item in set) {
-                OnDataRefresh?.Invoke(item);
-            }
+            // 刷新关联的影片 - association mapper deleted
+            // HashSet<long> set = MapperManager.associationMapper.GetAssociationDatas(CurrentAssocDataID);
+            // set.Add(CurrentAssocDataID);
             base.Confirm(sender, e);
         }
 

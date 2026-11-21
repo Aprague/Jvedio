@@ -6,15 +6,13 @@ namespace Jvedio.Core.Lang
 {
     public static class LangManager
     {
+        /// <summary>
+        /// 固定设置为简体中文，忽略传入值
+        /// </summary>
         public static bool SetLang(string lang)
         {
-            if (!SuperControls.Style.LangManager.SupportLanguages.Contains(lang)) {
-                Logger.Warn($"lang not support: {lang}");
-                return false;
-            }
-
             string format = "pack://application:,,,/Jvedio;Component/Core/Lang/{0}.xaml";
-            format = string.Format(format, lang);
+            format = string.Format(format, "zh-CN");
             foreach (ResourceDictionary mergedDictionary in Application.Current.Resources.MergedDictionaries) {
                 if (mergedDictionary.Source != null && mergedDictionary.Source.OriginalString.Contains("Jvedio;Component/Core/Lang")) {
                     try {
@@ -23,7 +21,7 @@ namespace Jvedio.Core.Lang
                         Application.Current.Resources.MergedDictionaries.Add(mergedDictionary);
                         return true;
                     } catch (Exception ex) {
-                        Logger.Error(ex);
+                        App.Logger.Error(ex);
                         return false;
                     }
                 }

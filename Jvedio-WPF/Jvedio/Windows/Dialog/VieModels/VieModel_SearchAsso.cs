@@ -236,13 +236,13 @@ namespace Jvedio.ViewModel
             ExistAssociationDatas = new ObservableCollection<Video>();
             CurrentExistAssocData = new List<Video>();
 
-            // 遍历邻接表，找到所有关联的 id
-            HashSet<long> set = associationMapper.GetAssociationDatas(dataID);
-            if (set?.Count > 0) {
+            // 遍历邻接表，找到所有关联的 id - association mapper deleted
+            // HashSet<long> set = associationMapper.GetAssociationDatas(dataID);
+            if (false) {
                 SelectWrapper<Video> wrapper = new SelectWrapper<Video>();
 
                 wrapper.Select("VID", "metadata.DataID", "Title", "MVID", "Path")
-                    .In("metadata.DataID", set.Select(x => x.ToString()));
+                    .In("metadata.DataID", Enumerable.Empty<string>());
 
                 string sql = VideoMapper.SQL_BASE;
                 sql = wrapper.ToSelect(false) + sql + wrapper.ToWhere(false);
@@ -295,15 +295,16 @@ namespace Jvedio.ViewModel
             foreach (long id in list)
                 toDelete.Add(id);
 
-            if (toInsert.Count > 0)
-                associationMapper.InsertBatch(toInsert, InsertMode.Ignore);
-            if (toDelete.Count > 0) {
-                foreach (long id in toDelete) {
-                    string sql = $"delete from common_association where MainDataID='{id}' or SubDataID='{id}'";
-                    associationMapper.ExecuteNonQuery(sql);
-                    Logger.Info($"delete assoc id[{id}]");
-                }
-            }
+            // association mapper deleted - no-op for save
+            // if (toInsert.Count > 0)
+            //     associationMapper.InsertBatch(toInsert, InsertMode.Ignore);
+            // if (toDelete.Count > 0) {
+            //     foreach (long id in toDelete) {
+            //         string sql = $"delete from common_association where MainDataID='{id}' or SubDataID='{id}'";
+            //         associationMapper.ExecuteNonQuery(sql);
+            //         Logger.Info($"delete assoc id[{id}]");
+            //     }
+            // }
 
             return toDelete;
         }

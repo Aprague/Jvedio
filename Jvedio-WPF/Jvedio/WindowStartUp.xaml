@@ -479,8 +479,6 @@
                         <super:HoverPath Grid.Row="1" Style="{StaticResource SettingHoverPath}">
                             <super:HoverPath.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Click="ShowAbout" Header="{DynamicResource About}" />
-                                    <MenuItem Click="ShowUpgradeWindow" Header="{DynamicResource CheckUpgrade}" />
                                     <MenuItem Command="cmd:File.OpenBaseDir" Header="{DynamicResource OpenAppPath}" />
                                 </ContextMenu>
                             </super:HoverPath.ContextMenu>

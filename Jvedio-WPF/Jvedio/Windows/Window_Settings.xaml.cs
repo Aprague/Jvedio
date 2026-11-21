@@ -1,9 +1,8 @@
 ﻿using Jvedio.Core.Config;
-using Jvedio.Core.Crawler;
 using Jvedio.Core.Enums;
 using Jvedio.Core.Global;
 using Jvedio.Core.Media;
-using Jvedio.Core.Plugins.Crawler;
+using Jvedio.Core.UserControls;
 using Jvedio.Entity;
 using Jvedio.Entity.Common;
 using Jvedio.Mapper;
@@ -20,6 +19,7 @@ using SuperUtils.NetWork.Entity;
 using SuperUtils.Systems;
 using System;
 using System.Collections.Generic;
+using static Jvedio.MapperManager;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -39,7 +39,6 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 using static Jvedio.App;
-using static Jvedio.Core.Global.UrlManager;
 using static SuperUtils.WPF.VisualTools.WindowHelper;
 
 namespace Jvedio
@@ -49,8 +48,6 @@ namespace Jvedio
     /// </summary>
     public partial class Window_Settings : SuperControls.Style.BaseWindow
     {
-
-        private const string DEFAULT_TEST_URL = "https://www.example.com/";
 
         #region "事件"
 
@@ -73,8 +70,6 @@ namespace Jvedio
         public VieModel_Settings vieModel { get; set; }
         private Main MainWindow { get; set; }
         private int CurrentRowIndex { get; set; }
-
-        private CrawlerServer currentCrawlerServer { get; set; }
 
         private bool IndexCanceled { get; set; } = false;
 
@@ -274,86 +269,12 @@ namespace Jvedio
 
         private void Window_ContentRendered(object sender, EventArgs e)
         {
-            InitIndex();
+            // InitIndex removed: was network-related
             InitScanDatabases();
             InitViewRename(ConfigManager.RenameConfig.FormatString);
             InitCheckedBoxChecked();
             InitRenameCombobox();
-            InitProxy();
-            InitLang();
-        }
-
-        /// <summary>
-        /// 设置语言
-        /// </summary>
-        private void InitLang()
-        {
-            int langIdx = 0;
-            if (!string.IsNullOrEmpty(ConfigManager.Settings.CurrentLanguage)) {
-                for (int i = 0; i < langComboBox.Items.Count; i++) {
-                    ComboBoxItem item = langComboBox.Items[i] as ComboBoxItem;
-                    if (item.Tag.ToString().Equals(ConfigManager.Settings.CurrentLanguage)) {
-                        langIdx = i;
-                        break;
-                    }
-                }
-            }
-            langComboBox.SelectedIndex = langIdx;
-            langComboBox.SelectionChanged += (s, ev) => {
-                if (ev.AddedItems?.Count > 0) {
-                    ComboBoxItem comboBoxItem = ev.AddedItems[0] as ComboBoxItem;
-                    string lang = comboBoxItem.Tag.ToString();
-                    SuperControls.Style.LangManager.SetLang(lang);
-                    Jvedio.Core.Lang.LangManager.SetLang(lang);
-                    vieModel.CurrentLanguage = lang;
-                }
-            };
-        }
-
-        /// <summary>
-        /// 设置代理选中
-        /// </summary>
-        private void InitProxy()
-        {
-            List<RadioButton> proxies = proxyStackPanel.Children.OfType<RadioButton>().ToList();
-            for (int i = 0; i < proxies.Count; i++) {
-                if (i == ConfigManager.ProxyConfig.ProxyMode)
-                    proxies[i].IsChecked = true;
-                int idx = i;
-                proxies[i].Click += (s, ev) => {
-                    ConfigManager.ProxyConfig.ProxyMode = idx;
-                    MessageCard.Info(LangManager.GetValueByKey("RebootToTakeEffect"));
-                };
-            }
-
-            List<RadioButton> proxyTypes = proxyTypesStackPanel.Children.OfType<RadioButton>().ToList();
-            for (int i = 0; i < proxyTypes.Count; i++) {
-                if (i == ConfigManager.ProxyConfig.ProxyType)
-                    proxyTypes[i].IsChecked = true;
-                int idx = i;
-                proxyTypes[i].Click += (s, ev) => {
-                    ConfigManager.ProxyConfig.ProxyType = idx;
-                };
-            }
-
-            // 设置代理密码
-            passwordBox.Password = vieModel.ProxyPwd;
-
-            passwordBox.PasswordChanged += (s, ev) => {
-                if (!string.IsNullOrEmpty(passwordBox.Password))
-                    vieModel.ProxyPwd = JvedioLib.Security.Encrypt.AesEncrypt(passwordBox.Password, 0);
-            };
-        }
-
-        private void InitIndex()
-        {
-            // 初次启动后不给设置默认打开上一次库，否则会提示无此数据库
-            if (ConfigManager.Settings.DefaultDBID <= 0)
-                openDefaultCheckBox.IsEnabled = false;
-
-            // 设置 crawlerIndex
-            serverListBox.SelectedIndex = (int)ConfigManager.Settings.CrawlerSelectedIndex;
-
+            // InitProxy removed: was network-related
         }
 
 
@@ -377,7 +298,7 @@ namespace Jvedio
             }
 
             if (InComboBox.SelectedIndex < 0)
-                OutComboBox.SelectedIndex = 0;
+                InComboBox.SelectedIndex = 0;
         }
 
         public void AddPath(object sender, RoutedEventArgs e)
@@ -393,19 +314,144 @@ namespace Jvedio
             }
         }
 
-
         public void DelPath(object sender, RoutedEventArgs e)
         {
-            if (PathListBox.SelectedIndex >= 0) {
-                for (int i = PathListBox.SelectedItems.Count - 1; i >= 0; i--) {
-                    vieModel.ScanPath.Remove(PathListBox.SelectedItems[i].ToString());
+            if (vieModel?.ScanPath == null)
+                return;
+
+            // 先收集选中的路径
+            List<string> pathsToDelete = new List<string>();
+            foreach (var item in PathListBox.SelectedItems) {
+                string pathStr = item as string;
+                if (!string.IsNullOrEmpty(pathStr) && vieModel.ScanPath.Contains(pathStr)) {
+                    pathsToDelete.Add(pathStr);
                 }
+            }
+
+            foreach (string delPath in pathsToDelete) {
+                DeleteVideosByScanPath(delPath);
+                vieModel.ScanPath.Remove(delPath);
             }
         }
 
         public void ClearPath(object sender, RoutedEventArgs e)
         {
-            vieModel.ScanPath?.Clear();
+            if (vieModel?.ScanPath == null || vieModel.ScanPath.Count == 0)
+                return;
+
+            List<string> allPaths = new List<string>(vieModel.ScanPath);
+            foreach (string path in allPaths) {
+                DeleteVideosByScanPath(path);
+            }
+            vieModel.ScanPath.Clear();
+            RefreshVideoList();
+        }
+
+        /// <summary>
+        /// 根据扫描路径用 SQL 直接查询并删除匹配的视频记录
+        /// </summary>
+        private void DeleteVideosByScanPath(string delPath)
+        {
+            if (string.IsNullOrEmpty(delPath))
+                return;
+
+            // SQL LIKE 需要加 % 通配符，才能匹配子目录中的文件
+            // 精确匹配：REPLACE(m.Path, '\', '/') = REPLACE('E:\AAA', '\', '/')
+            // 子目录匹配：REPLACE(m.Path, '\', '/') LIKE REPLACE('E:\AAA', '\', '/') || '/' || '%'
+            // 使用 REPLACE 统一转为正斜杠，解决数据库中正斜杠和反斜杠混用的问题
+            string normPath = delPath.Replace('\\', '/');
+            string sql = $@"
+                SELECT m.DataID
+                FROM metadata m
+                WHERE m.DataType = 0
+                AND (
+                    REPLACE(m.Path, '\', '/') = '{normPath.Replace("'", "''")}'
+                    OR REPLACE(m.Path, '\', '/') LIKE '{normPath.Replace("'", "''")}' || '/' || '%'
+                )
+            ";
+
+            List<string> ids = new List<string>();
+            try {
+                List<Dictionary<string, object>> rows = metaDataMapper.Select(sql);
+                if (rows != null) {
+                    ids = rows.Select(r => r["DataID"].ToString()).ToList();
+                }
+            } catch (Exception ex) {
+                Logger.Error($"删除路径时查询视频失败: {ex.Message}");
+                return;
+            }
+
+            if (ids.Count == 0)
+                return;
+
+            // 按顺序删除（先删关联表，再删子表，最后删主表）
+            DeleteAllRelated(ids);
+
+            // 刷新 UI
+            RefreshVideoList();
+        }
+
+        /// <summary>
+        /// 删除视频的所有关联数据（按顺序：关联表 → 子表 → 主表）
+        /// </summary>
+        private void DeleteAllRelated(List<string> ids)
+        {
+            if (ids == null || ids.Count == 0) {
+                Logger.Error($"[DeleteAllRelated] ids 为空，跳过");
+                return;
+            }
+
+            int batchSize = 1000;
+            for (int i = 0; i < ids.Count; i += batchSize) {
+                List<string> batch = ids.GetRange(i, Math.Min(batchSize, ids.Count - i));
+                string idsStr = string.Join(",", batch);
+
+                // 先删所有关联表（含事务）
+                StringBuilder builder = new StringBuilder();
+                builder.Append("begin;");
+                builder.Append($"delete from metadata_to_tagstamp where DataID in ({idsStr});");
+                builder.Append($"delete from metadata_to_actor where DataID in ({idsStr});");
+                builder.Append($"delete from metadata_to_label where DataID in ({idsStr});");
+                builder.Append($"delete from metadata_to_translation where DataID in ({idsStr});");
+                builder.Append("commit;");
+                try {
+                    videoMapper.ExecuteNonQuery(builder.ToString());
+                    Logger.Error($"[DeleteAllRelated] 关联表删除成功");
+                } catch (Exception ex) {
+                    Logger.Error($"[DeleteAllRelated] 关联表删除失败: {ex.Message}");
+                }
+
+                // 再删 metadata_video（子表）
+                try {
+                    metaDataMapper.ExecuteNonQuery($"delete from metadata_video where DataID in ({idsStr})");
+                    Logger.Error($"[DeleteAllRelated] metadata_video 删除成功");
+                } catch (Exception ex) {
+                    Logger.Error($"[DeleteAllRelated] metadata_video 删除失败: {ex.Message}");
+                }
+
+                // 最后删 metadata（主表）
+                try {
+                    metaDataMapper.ExecuteNonQuery($"delete from metadata where DataID in ({idsStr})");
+                    Logger.Error($"[DeleteAllRelated] metadata 删除成功，共 {batch.Count} 条");
+                } catch (Exception ex) {
+                    Logger.Error($"[DeleteAllRelated] metadata 删除失败: {ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 刷新所有视频列表的 UI
+        /// </summary>
+        private void RefreshVideoList()
+        {
+            List<VideoList> videoLists = MainWindow?.vieModel?.TabItemManager?.GetAllVideoList();
+            if (videoLists != null) {
+                foreach (VideoList vl in videoLists) {
+                    vl.Refresh();
+                }
+            }
+            // 更新统计信息
+            VideoList.onStatistic?.Invoke();
         }
 
 
@@ -442,18 +488,6 @@ namespace Jvedio
         }
         #endregion
 
-        private void SetVideoPlayerPath(object sender, RoutedEventArgs e)
-        {
-            System.Windows.Forms.OpenFileDialog openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog1.Title = SuperControls.Style.LangManager.GetValueByKey("Choose");
-            openFileDialog1.Filter = "exe|*.exe";
-            openFileDialog1.FilterIndex = 1;
-            if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
-                string exePath = openFileDialog1.FileName;
-                if (File.Exists(exePath))
-                    ConfigManager.Settings.VideoPlayerPath = exePath;
-            }
-        }
 
         private void SaveSettings(object sender, RoutedEventArgs e)
         {
@@ -463,9 +497,6 @@ namespace Jvedio
 
         private void ApplySettings(object sender, RoutedEventArgs e)
         {
-            // 保存扫描库
-            ConfigManager.DownloadConfig.Save();
-
             if (DatabaseComboBox.ItemsSource != null && DatabaseComboBox.SelectedItem != null) {
                 AppDatabase db = DatabaseComboBox.SelectedItem as AppDatabase;
                 List<string> list = new List<string>();
@@ -481,16 +512,13 @@ namespace Jvedio
                 }
             }
 
-            bool success = vieModel.SaveServers((msg) => {
-                MessageCard.Error(msg);
-            });
-            if (success) {
-                VideoParser.InitSearchPattern();
-                SavePath();
-                SaveSettings();
+            // SaveServers removed: was network-related (server management)
+            // Run save logic directly
+            VideoParser.InitSearchPattern();
+            SavePath();
+            SaveSettings();
 
-                SuperControls.Style.MessageNotify.Success(SuperControls.Style.LangManager.GetValueByKey("Message_Success"));
-            }
+            SuperControls.Style.MessageNotify.Success(SuperControls.Style.LangManager.GetValueByKey("Message_Success"));
             UtilsManager.OnUtilSettingChange();
 
 
@@ -518,21 +546,6 @@ namespace Jvedio
             ConfigManager.Settings.PicPathJson = JsonConvert.SerializeObject(vieModel.PicPaths);
         }
 
-        private void SetFFMPEGPath(object sender, RoutedEventArgs e)
-        {
-            System.Windows.Forms.OpenFileDialog openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog1.Title = SuperControls.Style.LangManager.GetValueByKey("ChooseFFmpeg");
-            openFileDialog1.FileName = "ffmpeg.exe";
-            openFileDialog1.Filter = "ffmpeg.exe|*.exe";
-            openFileDialog1.FilterIndex = 1;
-            if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
-                string exePath = openFileDialog1.FileName;
-                if (File.Exists(exePath)) {
-                    if (new FileInfo(exePath).Name.ToLower() == "ffmpeg.exe")
-                        vieModel.FFMPEG_Path = exePath;
-                }
-            }
-        }
 
         private void DatabaseComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -615,116 +628,6 @@ namespace Jvedio
                 vieModel.NFOSavePath = path;
             } else {
                 MessageNotify.Error(SuperControls.Style.LangManager.GetValueByKey("Message_CanNotBeNull"));
-            }
-        }
-
-        private void NewServer(object sender, RoutedEventArgs e)
-        {
-            string pluginID = GetPluginID();
-            if (string.IsNullOrEmpty(pluginID))
-                return;
-            CrawlerServer server = new CrawlerServer() {
-                PluginID = pluginID,
-                Enabled = true,
-                Url = DEFAULT_TEST_URL,
-                Cookies = string.Empty,
-                Available = 0,
-                LastRefreshDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-            };
-            ObservableCollection<CrawlerServer> list = vieModel.CrawlerServers[pluginID];
-            if (list == null)
-                list = new ObservableCollection<CrawlerServer>();
-            list.Add(server);
-            vieModel.CrawlerServers[pluginID] = list;
-            ServersDataGrid.ItemsSource = null;
-            ServersDataGrid.ItemsSource = list;
-        }
-
-        private string GetPluginID()
-        {
-            int idx = serverListBox.SelectedIndex;
-            if (idx < 0 || vieModel.CrawlerServers?.Count == 0)
-                return null;
-            return vieModel.CrawlerServers.Keys.ToList()[idx];
-        }
-
-
-        private void TestServer(object sender, RoutedEventArgs e)
-        {
-            int idx = CurrentRowIndex;
-            string pluginID = GetPluginID();
-            if (string.IsNullOrEmpty(pluginID))
-                return;
-            ObservableCollection<CrawlerServer> list = vieModel.CrawlerServers[pluginID];
-            CrawlerServer server = list[idx];
-
-            if (!server.IsHeaderProper()) {
-                MessageNotify.Error(LangManager.GetValueByKey("HeaderNotProper"));
-                return;
-            }
-
-            server.Available = 2;
-            ServersDataGrid.IsEnabled = false;
-            CheckUrl(server, (s) => {
-                ServersDataGrid.IsEnabled = true;
-                list[idx].LastRefreshDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            });
-        }
-
-        private void DeleteServer(object sender, RoutedEventArgs e)
-        {
-            string pluginID = GetPluginID();
-            if (string.IsNullOrEmpty(pluginID))
-                return;
-            Console.WriteLine(CurrentRowIndex);
-            ObservableCollection<CrawlerServer> list = vieModel.CrawlerServers[pluginID];
-            list.RemoveAt(CurrentRowIndex);
-            vieModel.CrawlerServers[pluginID] = list;
-            ServersDataGrid.ItemsSource = null;
-            ServersDataGrid.ItemsSource = list;
-        }
-
-        private void SetCurrentRowIndex(object sender, MouseButtonEventArgs e)
-        {
-            DataGridRow dgr = null;
-            var visParent = VisualTreeHelper.GetParent(e.OriginalSource as FrameworkElement);
-            while (dgr == null && visParent != null) {
-                dgr = visParent as DataGridRow;
-                visParent = VisualTreeHelper.GetParent(visParent);
-            }
-
-            if (dgr == null) {
-                return;
-            }
-
-            CurrentRowIndex = dgr.GetIndex();
-        }
-
-        private async void CheckUrl(CrawlerServer server, Action<int> callback)
-        {
-            // library 需要保证 Cookies 和 UserAgent完全一致
-            RequestHeader header = CrawlerServer.ParseHeader(server);
-            try {
-                string title = await HttpHelper.AsyncGetWebTitle(server.Url, header);
-                if (string.IsNullOrEmpty(title)) {
-                    server.Available = -1;
-                } else {
-                    server.Available = 1;
-                }
-
-                await Dispatcher.BeginInvoke((Action)delegate {
-                    ServersDataGrid.Items.Refresh();
-                    if (!string.IsNullOrEmpty(title))
-                        MessageCard.Success(title);
-                });
-                callback.Invoke(0);
-            } catch (WebException ex) {
-                MessageCard.Error(ex.Message);
-                server.Available = -1;
-                await Dispatcher.BeginInvoke((Action)delegate {
-                    ServersDataGrid.Items.Refresh();
-                });
-                callback.Invoke(0);
             }
         }
 
@@ -901,7 +804,6 @@ namespace Jvedio
         {
             SaveSettings();
             ConfigManager.Settings.Save();
-            ConfigManager.ProxyConfig.Save();
             ConfigManager.ScanConfig.Save();
             ConfigManager.FFmpegConfig.Save();
             ConfigManager.RenameConfig.Save();
@@ -915,7 +817,6 @@ namespace Jvedio
             ConfigManager.Settings.OpenDataBaseDefault = vieModel.OpenDataBaseDefault;
             ConfigManager.Settings.AutoGenScreenShot = vieModel.AutoGenScreenShot;
             ConfigManager.Settings.CloseToTaskBar = vieModel.CloseToTaskBar;
-            ConfigManager.Settings.CurrentLanguage = vieModel.CurrentLanguage;
             ConfigManager.Settings.SaveInfoToNFO = vieModel.SaveInfoToNFO;
             ConfigManager.Settings.NFOSavePath = vieModel.NFOSavePath;
             ConfigManager.Settings.OverwriteNFO = vieModel.OverwriteNFO;
@@ -927,13 +828,6 @@ namespace Jvedio
             ConfigManager.Settings.IgnoreCertVal = vieModel.IgnoreCertVal;
             ConfigManager.Settings.AutoBackup = vieModel.AutoBackup;
             ConfigManager.Settings.AutoBackupPeriodIndex = vieModel.AutoBackupPeriodIndex;
-
-            // 代理
-            ConfigManager.ProxyConfig.Server = vieModel.ProxyServer;
-            ConfigManager.ProxyConfig.Port = vieModel.ProxyPort;
-            ConfigManager.ProxyConfig.UserName = vieModel.ProxyUserName;
-            ConfigManager.ProxyConfig.Password = vieModel.ProxyPwd;
-            ConfigManager.ProxyConfig.HttpTimeout = vieModel.HttpTimeout;
 
             // 扫描
             ConfigManager.ScanConfig.MinFileSize = vieModel.MinFileSize;
@@ -976,10 +870,6 @@ namespace Jvedio
             ConfigManager.Settings.ListenPort = vieModel.ListenPort;
         }
 
-        private void CopyFFmpegUrl(object sender, MouseButtonEventArgs e)
-        {
-            FileHelper.TryOpenUrl(FFMPEG_URL);
-        }
 
         private void ImageSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -993,54 +883,22 @@ namespace Jvedio
 
         private void url_PreviewMouseLeftButtonUp_1(object sender, MouseButtonEventArgs e)
         {
-            setHeaderPopup.IsOpen = true;
-            SearchBox searchBox = sender as SearchBox;
-            string headers = searchBox.Text;
-            if (!string.IsNullOrEmpty(headers)) {
-                try {
-                    Dictionary<string, string> dict = JsonUtils.TryDeserializeObject<Dictionary<string, string>>(headers);
-                    if (dict != null && dict.Count > 0) {
-                        StringBuilder builder = new StringBuilder();
-                        foreach (string key in dict.Keys) {
-                            builder.Append($"{key}: {dict[key]}{Environment.NewLine}");
-                        }
-
-                        inputTextbox.Text = builder.ToString();
-                    }
-                } catch (Exception ex) {
-                    Logger.Error(ex);
-                }
-            }
-
-            string pluginID = GetPluginID();
-            if (string.IsNullOrEmpty(pluginID))
-                return;
-            currentCrawlerServer = vieModel.CrawlerServers[pluginID][ServersDataGrid.SelectedIndex];
+            // Header popup UI removed: network-related header configuration
         }
 
         private void CancelHeader(object sender, RoutedEventArgs e)
         {
-            setHeaderPopup.IsOpen = false;
+            // Header popup removed
         }
 
         private void ConfirmHeader(object sender, RoutedEventArgs e)
         {
-            setHeaderPopup.IsOpen = false;
-            if (currentCrawlerServer != null) {
-                currentCrawlerServer.Headers = parsedTextbox.Text.Replace("{" + Environment.NewLine + "    ", "{")
-                    .Replace(Environment.NewLine + "}", "}")
-                    .Replace($"\",{Environment.NewLine}    \"", "\",\"");
-                Dictionary<string, string> dict = JsonUtils.TryDeserializeObject<Dictionary<string, string>>(currentCrawlerServer.Headers);
-
-                if (dict != null && dict.ContainsKey("cookie"))
-                    currentCrawlerServer.Cookies = dict["cookie"];
-            }
+            // Header popup removed
         }
 
         private void InputHeader_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (parsedTextbox != null)
-                parsedTextbox.Text = Parse((sender as TextBox).Text);
+            // Header parsing UI removed
         }
 
         private string Parse(string text)
@@ -1076,49 +934,6 @@ namespace Jvedio
             return json.Replace("{", "{" + Environment.NewLine + "    ")
                 .Replace("}", Environment.NewLine + "}")
                 .Replace("\",\"", $"\",{Environment.NewLine}    \"");
-        }
-
-        private async void TestProxy(object sender, RoutedEventArgs e)
-        {
-            vieModel.TestProxyStatus = TaskStatus.Running;
-            SaveSettings();
-            Button button = sender as Button;
-            button.IsEnabled = false;
-            string url = textProxyUrl.Text;
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            RequestHeader header = new RequestHeader();
-            IWebProxy proxy = ConfigManager.ProxyConfig.GetWebProxy();
-            header.TimeOut = ConfigManager.ProxyConfig.HttpTimeout * 1000; // 转为 ms
-            header.WebProxy = proxy;
-            string error = LangManager.GetValueByKey("Error");
-            HttpResult httpResult = null;
-            try {
-                httpResult = await HttpClient.Get(url, header, SuperUtils.NetWork.Enums.HttpMode.String);
-            } catch (TimeoutException ex) { error = ex.Message; } catch (Exception ex) { error = ex.Message; }
-            if (httpResult != null) {
-                if (httpResult.StatusCode == HttpStatusCode.OK) {
-                    MessageCard.Success($"{LangManager.GetValueByKey("Success")} {LangManager.GetValueByKey("Delay")} {stopwatch.ElapsedMilliseconds} ms");
-                    vieModel.TestProxyStatus = TaskStatus.RanToCompletion;
-                    MessageCard.Info(LangManager.GetValueByKey("RebootToTakeEffect"));
-                } else {
-                    MessageCard.Error(httpResult.Error);
-                    vieModel.TestProxyStatus = TaskStatus.Canceled;
-                }
-            } else {
-                MessageCard.Error(error);
-                vieModel.TestProxyStatus = TaskStatus.Canceled;
-            }
-
-            stopwatch.Stop();
-            button.IsEnabled = true;
-        }
-
-        private void ShowHeaderHelp(object sender, RoutedEventArgs e)
-        {
-            setHeaderPopup.IsOpen = false;
-            FileHelper.TryOpenUrl(UrlManager.HEADER_HELP);
         }
 
         private async void CreatePlayableIndex(object sender, RoutedEventArgs e)
@@ -1218,29 +1033,9 @@ namespace Jvedio
         {
         }
 
-        private void PluginList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            int idx = (sender as ListBox).SelectedIndex;
-            if (idx < 0)
-                return;
-            if (vieModel.CrawlerServers?.Count > 0) {
-                string pluginID = PluginType.Crawler.ToString().ToLower() + "/" + vieModel.DisplayCrawlerServers[idx];
-                PluginMetaData pluginMetaData = CrawlerManager.PluginMetaDatas.Where(arg => arg.PluginID.Equals(pluginID)).FirstOrDefault();
-                if (vieModel.CrawlerServers.ContainsKey(pluginID)) {
-                    ServersDataGrid.ItemsSource = null;
-                    ServersDataGrid.ItemsSource = vieModel.CrawlerServers[pluginID];
-                    vieModel.CurrentPlugin = pluginMetaData;
-                    ConfigManager.Settings.CrawlerSelectedIndex = idx;
-                    vieModel.ShowCurrentPlugin = true;
-                }
-
-            }
-        }
-
         private void SavePluginSetting(object sender, RoutedEventArgs e)
         {
-            // 保存插件启用情况
-            vieModel.CurrentPlugin?.SaveConfig();
+            // Plugin settings removed: network-related
         }
 
 
@@ -1258,7 +1053,6 @@ namespace Jvedio
                 ConfigManager.Settings.DelInfoAfterDelFile = true;
                 ConfigManager.Settings.HotKeyEnable = false;
                 ConfigManager.Settings.HotKeyString = "";
-                langComboBox.SelectedIndex = 0;
                 ConfigManager.Settings.VideoPlayerPath = "";
 
                 // 图片
@@ -1291,24 +1085,6 @@ namespace Jvedio
                 NfoParse.SaveData(NfoParse.CurrentNFOParse);
                 vieModel.LoadNfoParseData();
 
-                // 网络
-                vieModel.IgnoreCertVal = true;
-                vieModel.HttpTimeout = ProxyConfig.DEFAULT_TIMEOUT;
-                vieModel.DownloadWhenTitleNull = false;
-                vieModel.SkipExistImage = false;
-                vieModel.SaveInfoToNFO = false;
-
-                ConfigManager.DownloadConfig.DownloadThumbNail = false;
-                ConfigManager.DownloadConfig.DownloadPoster = false;
-                ConfigManager.DownloadConfig.DownloadPreviewImage = false;
-                ConfigManager.DownloadConfig.DownloadActor = false;
-                ConfigManager.DownloadConfig.OverrideInfo = false;
-                ConfigManager.DownloadConfig.Save();
-
-                ConfigManager.ProxyConfig.ProxyMode = (int)ProxyConfig.DEFAULT_PROXY_MODE;
-                ConfigManager.ProxyConfig.ProxyType = (int)ProxyConfig.DEFAULT_PROXY_TYPE;
-                ConfigManager.ProxyConfig.Save();
-
                 // 显示
                 ConfigManager.Main.DisplaySearchBox = true;
                 ConfigManager.Main.DisplayPage = true;
@@ -1330,20 +1106,6 @@ namespace Jvedio
 
                 ConfigManager.VideoConfig.ShowFileNameIfTitleEmpty = true;
                 ConfigManager.VideoConfig.ShowCreateDateIfReleaseDateEmpty = true;
-
-                // 视频处理
-                vieModel.FFMPEG_Path = "";
-                vieModel.ScreenShot_ThreadNum = FFmpegConfig.DEFAULT_THREAD_NUM;
-                vieModel.SkipExistScreenShot = false;
-                vieModel.ScreenShotAfterImport = false;
-                vieModel.ScreenShotNum = FFmpegConfig.DEFAULT_SCREEN_SHOT_NUM;
-                vieModel.ScreenShotIgnoreStart = FFmpegConfig.DEFAULT_SCREEN_SHOT_IGNORE_START;
-                vieModel.ScreenShotIgnoreEnd = FFmpegConfig.DEFAULT_SCREEN_SHOT_IGNORE_END;
-                vieModel.SkipExistGif = false;
-                vieModel.GifWidth = FFmpegConfig.DEFAULT_GIF_WIDTH;
-                vieModel.GifHeight = FFmpegConfig.DEFAULT_GIF_HEIGHT;
-                vieModel.GifAutoHeight = false;
-                vieModel.GifDuration = FFmpegConfig.DEFAULT_GIF_DURATION;
 
                 // 重命名
                 vieModel.RemoveTitleSpace = false;
@@ -1371,11 +1133,6 @@ namespace Jvedio
                     path += "\\";
                 vieModel.BasePicPath = path;
             }
-        }
-
-        private void ShowCrawlerHelp(object sender, RoutedEventArgs e)
-        {
-            MessageCard.Info(LangManager.GetValueByKey("CrawlerServerHint"));
         }
 
         private void ClearCache(object sender, RoutedEventArgs e)

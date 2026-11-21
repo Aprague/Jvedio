@@ -139,6 +139,16 @@
                 </Border>
                 <Border Style="{StaticResource StatisticBorder}">
                     <StackPanel>
+                        <TextBlock Style="{StaticResource TitleTextStyle}" Text="{DynamicResource Repeat}" />
+                        <TextBox
+                            Name="skipped"
+                            Foreground="{DynamicResource Window.Sub.Foreground}"
+                            Style="{StaticResource StatisticTextBox}"
+                            Text="0" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatisticBorder}">
+                    <StackPanel>
                         <TextBlock Style="{StaticResource TitleTextStyle}" Text="{DynamicResource Update}" />
                         <TextBox
                             Name="update"

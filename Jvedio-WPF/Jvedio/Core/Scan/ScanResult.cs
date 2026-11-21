@@ -16,6 +16,11 @@ namespace Jvedio.Core.Scan
         public List<Video> InsertVideos { get; set; }
 
         /// <summary>
+        /// 重复跳过数量
+        /// </summary>
+        public long Skipped { get; set; }
+
+        /// <summary>
         /// （路径，原因）
         /// </summary>
         public Dictionary<string, ScanDetailInfo> NotImport { get; set; }

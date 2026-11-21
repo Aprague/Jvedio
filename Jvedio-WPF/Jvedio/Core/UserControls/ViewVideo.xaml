@@ -228,13 +228,13 @@
                 <!--  删除按钮  -->
                 <Image
                 Height="40"
-                Margin="10,0,0,10"
+                Margin="5,5,5,0"
                 HorizontalAlignment="Right"
-                VerticalAlignment="Bottom"
+                VerticalAlignment="Top"
                 Cursor="Hand"
                 MouseLeftButtonUp="DeleteVideo"
                 Opacity="0.8"
-                Source="/Resources/Picture/delete.png"
+                Source="/Resources/Picture/status_fail.png"
                 ToolTip="{Binding Title, Mode=OneWay}">
                     <Image.Style>
                         <Style TargetType="Image">

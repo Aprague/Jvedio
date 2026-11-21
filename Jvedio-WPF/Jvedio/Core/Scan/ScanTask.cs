@@ -9,10 +9,8 @@ using SuperUtils.IO;
 using SuperUtils.Time;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using static Jvedio.MapperManager;
 
@@ -39,8 +37,6 @@ namespace Jvedio.Core.Scan
         public static Dictionary<NotImportReason, string> ReasonToString { get; set; } = new Dictionary<NotImportReason, string>()
         {
             { NotImportReason.NotInExtension, LangManager.GetValueByKey("NotSupportedExt") },
-            { NotImportReason.RepetitiveVideo, LangManager.GetValueByKey("RepeatedVideo") },
-            { NotImportReason.RepetitiveVID, LangManager.GetValueByKey("RepeatedVID") },
             { NotImportReason.SizeTooSmall, LangManager.GetValueByKey("FileSizeTooSmall") },
             { NotImportReason.SizeTooLarge, LangManager.GetValueByKey("FileSizeTooBig") },
         };
@@ -91,8 +87,6 @@ namespace Jvedio.Core.Scan
 
         public List<string> FileExt { get; set; }
 
-        private List<Video> existVideos { get; set; }
-
         private List<ActorInfo> existActors { get; set; }
         #endregion
 
@@ -142,7 +136,10 @@ namespace Jvedio.Core.Scan
         {
             int total = ScanPaths.Count;
             int count = 0;
-            foreach (string path in ScanPaths) {
+            object lockObj = new object();
+            Parallel.ForEach(ScanPaths, (path) => {
+                if (!Directory.Exists(path))
+                    return;
                 IEnumerable<string> paths = DirHelper.GetFileList(path, "*.*", (ex) => {
                     // 发生异常
                     Logger.Error(ex.Message);
@@ -150,10 +147,12 @@ namespace Jvedio.Core.Scan
                     Message = dir;
                     onScanning?.Invoke(this, new MessageCallBackEventArgs(dir));
                 }, TokenCTS);
-                FilePaths.AddRange(paths);
-                count++;
-                Progress = (float)Math.Round(((float)count) / total, 4) * 100;
-            }
+                lock (lockObj) {
+                    FilePaths.AddRange(paths);
+                    count++;
+                    Progress = (float)Math.Round(((float)count) / total, 4) * 100;
+                }
+            });
             Progress = 30;
         }
 
@@ -197,7 +196,6 @@ namespace Jvedio.Core.Scan
 
                     Progress = 60;
 
-                    ScanResult.TotalCount = parseResult.import.Count + parseResult.notImport.Count + parseResult.failNFO.Count;
                     try {
                         CheckStatus();
                     } catch (TaskCanceledException ex) {
@@ -210,11 +208,14 @@ namespace Jvedio.Core.Scan
                     // 将 NFO 提取出来
                     List<Video> importNFO = parseResult.import.Where(arg => arg.Path.ToLower().EndsWith(".nfo")).ToList();
                     parseResult.import.RemoveAll(arg => arg.Path.ToLower().EndsWith(".nfo"));
-                    HandleImport(parseResult.import);
+
+                    // 一次性构建 VID 索引（数据库 + 新导入），避免 HandleImportNFO 查不到刚插入的视频
+                    Dictionary<string, Video> vidIndex = BuildVidIndex();
+                    HandleImport(parseResult.import, vidIndex);
 
                     Progress = 70;
 
-                    HandleImportNFO(importNFO);          // 导入视频后再导入 NFO
+                    HandleImportNFO(importNFO, vidIndex);         // 导入视频后再导入 NFO
 
                     Progress = 80;
 
@@ -223,6 +224,10 @@ namespace Jvedio.Core.Scan
                     Progress = 90;
 
                     HandleFailNFO(parseResult.failNFO);
+
+                    // 设置总数（包含跳过的重复）
+                    ScanResult.TotalCount = ScanResult.Import.Count + ScanResult.NotImport.Count + ScanResult.FailNFO.Count + ScanResult.Skipped;
+
                     Progress = 100;
                     Success = true;
                 } catch (Exception ex) {
@@ -239,142 +244,85 @@ namespace Jvedio.Core.Scan
             });
         }
 
-        private List<Video> GetExistVideos()
-        {
-            string sql = VideoMapper.SQL_BASE;
-            sql = "select metadata.DataID,VID,Hash,Size,Path,MVID " + sql + $" and metadata.DBId={ConfigManager.Main.CurrentDBId}";
-            List<Dictionary<string, object>> list = videoMapper.Select(sql);
-            return videoMapper.ToEntity<Video>(list, typeof(Video).GetProperties(), false);
-        }
-
-        private void HandleImport(List<Video> import)
+        private void HandleImport(List<Video> import, Dictionary<string, Video> nfoMatchIndex)
         {
             if (import == null || import.Count == 0) {
                 return;
             }
-            // 分为 2 部分，有识别码和无识别码
-            List<Video> noVidList = import.Where(arg => string.IsNullOrEmpty(arg.VID)).ToList();
-            List<Video> vidList = import.Where(arg => !string.IsNullOrEmpty(arg.VID)).ToList();
 
-            existVideos = GetExistVideos();
+            // 构建路径+大小索引（来自数据库），用于精确重复检测
+            // 注意：必须从 metadata 表查询，metadata_video 表不含 Path/Size 字段
+            List<MetaData> existData = metaDataMapper.SelectList();
 
-            // 1. 处理有识别码的
-            // 1.1 不需要导入
-            // 存在同路径、相同大小的影片
-            foreach (var item in vidList.Where(arg => existVideos.Where(t => arg.Size.Equals(t.Size) && arg.Path.Equals(t.Path)).Any())) {
-                ScanResult.NotImport.Add(item.Path, new ScanDetailInfo(LangManager.GetValueByKey("SamePathFileSize")));
-            }
-
-            vidList.RemoveAll(arg => existVideos.Where(t => arg.Size.Equals(t.Size) && arg.Path.Equals(t.Path)).Any());
-
-            // 存在不同路径、相同大小、相同 VID、且原路径也存在的影片
-            foreach (var item in vidList.Where(arg => existVideos
-                .Where(t => arg.Size.Equals(t.Size) && arg.VID.Equals(t.VID) && !arg.Path.Equals(t.Path) && File.Exists(t.Path))
-                .Any())) {
-                ScanDetailInfo scanDetailInfo = new ScanDetailInfo(LangManager.GetValueByKey("NotSamePathSameFileSize"));
-                StringBuilder builder = new StringBuilder($"和 {item.Path} 存在重复：");
-                builder.AppendLine();
-                builder.AppendLine();
-                List<Video> _videos = existVideos
-                .Where(t => item.Size.Equals(t.Size) && item.VID.Equals(t.VID) && !item.Path.Equals(t.Path) && File.Exists(t.Path)).ToList();
-                foreach (var _video in _videos)
-                    builder.AppendLine(_video.Path);
-                scanDetailInfo.Detail = builder.ToString();
-                ScanResult.NotImport.Add(item.Path, scanDetailInfo);
-            }
-
-            vidList.RemoveAll(arg => existVideos.Where(t => arg.Size.Equals(t.Size) && arg.VID.Equals(t.VID) && !arg.Path.Equals(t.Path) && File.Exists(t.Path)).Any());
-
-            // 存在不同路径，相同 VID，不同大小，且原路径存在（可能是剪辑的视频），且分段视频不相等
-            foreach (var item in vidList
-                .Where(arg => existVideos.Where(t => arg.VID.Equals(t.VID) &&
-                !arg.Path.Equals(t.Path) &&
-                !arg.Size.Equals(t.Size) &&
-                File.Exists(t.Path) &&
-                t.SubSection.Equals(arg.SubSection))
-                .Any())) {
-                ScanDetailInfo scanDetailInfo = new ScanDetailInfo(LangManager.GetValueByKey("SamePathNotSameFileSize"));
-                StringBuilder builder = new StringBuilder($"和 {item.Path} 存在重复：");
-                builder.AppendLine();
-                builder.AppendLine();
-                List<Video> _videos = existVideos
-                    .Where(t => item.VID.Equals(t.VID) && !item.Path.Equals(t.Path) && !item.Size.Equals(t.Size) && File.Exists(t.Path)).ToList();
-                foreach (var _video in _videos)
-                    builder.AppendLine(_video.Path);
-                scanDetailInfo.Detail = builder.ToString();
-                ScanResult.NotImport.Add(item.Path, scanDetailInfo);
-            }
-
-            vidList.RemoveAll(arg => existVideos.Where(t => arg.VID.Equals(t.VID)
-            && !arg.Path.Equals(t.Path) &&
-            !arg.Size.Equals(t.Size) &&
-            File.Exists(t.Path) &&
-            t.SubSection.Equals(arg.SubSection)).Any());
-
-            // 1.2 需要 update 路径
-            // VID 相同，原路径（或分段视频路径）不同
-            List<Video> toUpdate = new List<Video>();
-            foreach (Video video in vidList) {
-                Video existVideo = existVideos.Where(t => video.VID.Equals(t.VID) && (!video.Path.Equals(t.Path) || !video.SubSection.Equals(t.SubSection))).FirstOrDefault();
-                if (existVideo != null) {
-                    video.DataID = existVideo.DataID;
-                    video.MVID = existVideo.MVID; // 下面使用 videoMapper 更新的时候会使用到
-                    video.LastScanDate = DateHelper.Now();
-                    video.PathExist = 1;
-                    toUpdate.Add(video);
-                    ScanResult.Update.Add(video.Path, string.Empty);
+            Dictionary<string, long> pathSizeIndex = new Dictionary<string, long>();
+            foreach (MetaData m in existData) {
+                // 只查视频类型（DataType=0）
+                if (m.DataType == Core.Enums.DataType.Video && !string.IsNullOrEmpty(m.Path) && m.Size > 0) {
+                    string key = m.Path + "|||" + m.Size;
+                    pathSizeIndex[key] = m.Size;
                 }
             }
 
-            vidList.RemoveAll(arg => existVideos.Where(t => arg.VID.Equals(t.VID)).Any());
-
-            // 1.3 需要 insert
-            List<Video> toInsert = vidList;
-
-            // 2. 处理无识别码的
-            // 存在相同 HASH ，相同路径的影片
-            foreach (var item in noVidList.Where(arg => existVideos.Where(t => arg.Hash.Equals(t.Hash) && arg.Path.Equals(t.Path)).Any())) {
-                ScanDetailInfo scanDetailInfo = new ScanDetailInfo(LangManager.GetValueByKey("SameHashSamePath"));
-                StringBuilder builder = new StringBuilder($"和 {item.Path} 存在重复：");
-                builder.AppendLine();
-                builder.AppendLine();
-                List<Video> _videos = existVideos
-                    .Where(t => item.Hash.Equals(t.Hash) && item.Path.Equals(t.Path)).ToList();
-                foreach (var _video in _videos)
-                    builder.AppendLine(_video.Path);
-                scanDetailInfo.Detail = builder.ToString();
-                ScanResult.NotImport.Add(item.Path, scanDetailInfo);
+            List<Video> toImport = new List<Video>();
+            foreach (Video video in import) {
+                // 完全重复 = 路径+后缀+大小 全部相同
+                string key = video.Path + "|||" + video.Size;
+                if (pathSizeIndex.ContainsKey(key)) {
+                    if (Logs != null) {
+                        Logs.Add($"跳过重复: {video.Path}");
+                    }
+                    ScanResult.Skipped++;
+                    continue;
+                }
+                toImport.Add(video);
             }
 
-            noVidList.RemoveAll(arg => existVideos.Where(t => arg.Hash.Equals(t.Hash) && arg.Path.Equals(t.Path)).Any());
+            if (toImport.Count == 0) {
+                if (Logs != null) {
+                    Logs.Add($"全部重复，跳过导入");
+                }
+                return;
+            }
 
-            // hash 相同，原路径不同则需要更新
-            foreach (Video video in noVidList) {
-                Video existVideo = existVideos.Where(t => video.Hash.Equals(t.Hash) && !video.Path.Equals(t.Path)).FirstOrDefault();
-                if (existVideo != null) {
-                    video.DataID = existVideo.DataID;
-                    video.MVID = existVideo.MVID; // 下面使用 videoMapper 更新的时候会使用到
-                    video.LastScanDate = DateHelper.Now();
-                    video.PathExist = 1;
-                    toUpdate.Add(video);
-                    ScanResult.Update.Add(video.Path, LangManager.GetValueByKey("SameHashNotSamePath"));
+            if (Logs != null) {
+                Logs.Add($"新导入 {toImport.Count} 个，跳过 {ScanResult.Skipped} 个");
+            }
+
+            // 将通过的记录加入索引，避免同批导入中的重复也被导入
+            foreach (Video video in toImport) {
+                string key = video.Path + "|||" + video.Size;
+                pathSizeIndex[key] = video.Size;
+            }
+
+            // 同时更新 NFO 匹配索引（供 HandleImportNFO 使用）
+            foreach (Video video in toImport) {
+                if (!string.IsNullOrEmpty(video.VID)) {
+                    nfoMatchIndex[video.VID] = video;
                 }
             }
 
-            // 剩余的导入
-            noVidList.RemoveAll(arg => existVideos.Where(t => arg.Hash.Equals(t.Hash) && !arg.Path.Equals(t.Path)).Any());
-            toInsert.AddRange(noVidList);
+            ScanResult.Import.AddRange(toImport.Select(v => v.Path));
+            ScanResult.InsertVideos.AddRange(toImport);
+            InsertData(toImport);
+        }
 
-            // 1.更新
-            if (toUpdate?.Count > 0)
-                videoMapper.UpdateBatch(toUpdate, "SubSection"); // 分段视频
-            List<MetaData> toUpdateData = toUpdate.Select(arg => arg.toMetaData()).ToList();
-            if (toUpdateData?.Count > 0)
-                metaDataMapper.UpdateBatch(toUpdateData, "Path", "LastScanDate", "PathExist");
-            AddTags(toUpdate);
-
-            // 2.导入
-            InsertData(toInsert);
+        /// <summary>
+        /// 构建 VID→Video 索引（数据库中的视频 + 用于后续 NFO 匹配）
+        /// </summary>
+        private Dictionary<string, Video> BuildVidIndex()
+        {
+            Dictionary<string, Video> index = new Dictionary<string, Video>();
+            List<Video> existVideos = videoMapper.SelectList();
+            Logger.Info($"[BuildVidIndex] 数据库中共 {existVideos?.Count ?? 0} 条视频");
+            if (existVideos != null) {
+                foreach (Video v in existVideos) {
+                    if (!string.IsNullOrEmpty(v.VID)) {
+                        index[v.VID] = v;
+                    }
+                }
+            }
+            Logger.Info($"[BuildVidIndex] 索引中共 {index.Count} 个不同 VID");
+            return index;
         }
 
         private void HandleNotImport(Dictionary<string, NotImportReason> notImport)
@@ -383,19 +331,16 @@ namespace Jvedio.Core.Scan
                 if (ScanResult.NotImport.ContainsKey(key))
                     continue;
                 NotImportReason reason = notImport[key];
-                if (reason == NotImportReason.RepetitiveVID) {
-                    string vid = JvedioLib.Security.Identify.GetVID(Path.GetFileNameWithoutExtension(key));
-                    ScanResult.NotImport.Add(key, new ScanDetailInfo($"{ReasonToString[reason]} => {vid}"));
-                } else {
-                    ScanResult.NotImport.Add(key, new ScanDetailInfo(ReasonToString[reason]));
-                }
+                ScanResult.NotImport.Add(key, new ScanDetailInfo(ReasonToString[reason]));
             }
         }
 
         private void HandleFailNFO(List<string> failNFO)
         {
+            if (failNFO == null || failNFO.Count == 0)
+                return;
             foreach (string path in failNFO)
-                ScanResult.FailNFO.AddRange(failNFO);
+                ScanResult.FailNFO.Add(path);
         }
 
         private void CopyNfoImage(Dictionary<string, string> dict, List<Video> import, ImageType imageType)
@@ -512,13 +457,18 @@ namespace Jvedio.Core.Scan
             }
         }
 
-        private void HandleImportNFO(List<Video> import)
+        private void HandleImportNFO(List<Video> import, Dictionary<string, Video> vidIndex)
         {
             if (import == null || import.Count <= 0)
                 return;
 
-            existVideos = GetExistVideos();
             existActors = actorMapper.SelectList();
+
+            // 构建演员名称快速查找索引（避免 HandleActor 内重复构建）
+            Dictionary<string, ActorInfo> actorDict = null;
+            if (existActors != null) {
+                actorDict = existActors.ToDictionary(a => a.ActorName, StringComparer.OrdinalIgnoreCase);
+            }
 
             // 解析图片路径
 
@@ -547,11 +497,11 @@ namespace Jvedio.Core.Scan
                     CopyNfoImage(dict, import, ImageType.ScreenShot);
             }
 
-            // 1. 需要更新的
+            // 1. 匹配已存在的视频，更新元数据（使用共享索引，包含刚导入的视频）
             List<Video> toUpdate = new List<Video>();
             foreach (Video video in import) {
-                Video existVideo = existVideos.Where(t => video.VID.Equals(t.VID)).FirstOrDefault();
-                if (existVideo != null) {
+                Video existVideo;
+                if (!string.IsNullOrEmpty(video.VID) && vidIndex.TryGetValue(video.VID, out existVideo)) {
                     video.DataID = existVideo.DataID;
                     video.MVID = existVideo.MVID; // 下面使用 videoMapper 更新的时候会使用到
                     ScanResult.Update.Add(video.Path, LangManager.GetValueByKey("UpdateNFO"));
@@ -559,11 +509,11 @@ namespace Jvedio.Core.Scan
                     video.PathExist = 1;
                     video.LastScanDate = DateHelper.Now();
                     toUpdate.Add(video);
-                    HandleActor(video);
+                    HandleActor(video, actorDict);
                 }
             }
 
-            import.RemoveAll(arg => existVideos.Where(t => arg.VID.Equals(t.VID)).Any());
+            import.RemoveAll(arg => !string.IsNullOrEmpty(arg.VID) && vidIndex.ContainsKey(arg.VID));
 
             if (toUpdate?.Count > 0)
                 videoMapper.UpdateBatch(toUpdate, NFOUpdateVideoProps);
@@ -575,31 +525,49 @@ namespace Jvedio.Core.Scan
             InsertData(import);
         }
 
-        private void HandleActor(Video video)
+        private void HandleActor(Video video, Dictionary<string, ActorInfo> cachedActorDict = null)
         {
-            // 更新演员
-            if (!string.IsNullOrEmpty(video.ActorNames)) {
-                List<string> list = video.ActorNames.Split(SuperUtils.Values.ConstValues.Separator).ToList();
-                List<string> urls = video.ActorThumbs;
-                for (int i = 0; i < list.Count; i++) {
-                    string name = list[i];
-                    string url = i < urls.Count ? urls[i] : string.Empty;
-                    ActorInfo actorInfo = existActors?.Where(arg => arg.ActorName.Equals(name)).FirstOrDefault();
-                    if (actorInfo == null || actorInfo.ActorID <= 0) {
-                        actorInfo = new ActorInfo();
-                        actorInfo.ActorName = name;
-                        actorInfo.ImageUrl = url;
-                        actorMapper.Insert(actorInfo);
-                        existActors.Add(actorInfo);
-                    } else {
-                        actorInfo.ImageUrl = url;
-                        actorMapper.UpdateFieldById("ImageUrl", url, actorInfo.ActorID);
-                    }
+            // 更新演员 — 使用 Name 快速索引，避免重复 O(n) 搜索
+            if (string.IsNullOrEmpty(video.ActorNames))
+                return;
 
-                    // 保存信息
-                    string sql = $"insert or ignore into metadata_to_actor (ActorID,DataID) values ({actorInfo.ActorID},{video.DataID})";
-                    metaDataMapper.ExecuteNonQuery(sql);
+            // 优先使用外部传入的缓存字典，否则自行构建
+            Dictionary<string, ActorInfo> actorDict;
+            if (cachedActorDict != null) {
+                actorDict = cachedActorDict;
+            } else if (existActors != null) {
+                actorDict = existActors.ToDictionary(a => a.ActorName, StringComparer.OrdinalIgnoreCase);
+            } else {
+                return;
+            }
+
+            List<string> names = video.ActorNames.Split(SuperUtils.Values.ConstValues.Separator).ToList();
+            List<string> urls = video.ActorThumbs;
+
+            foreach (string name in names) {
+                if (string.IsNullOrEmpty(name))
+                    continue;
+                string url = string.Empty;
+                int idx = names.IndexOf(name);
+                if (idx < urls.Count)
+                    url = urls[idx];
+
+                if (!actorDict.TryGetValue(name, out ActorInfo actorInfo) || actorInfo.ActorID <= 0) {
+                    // 新演员
+                    actorInfo = new ActorInfo { ActorName = name, ImageUrl = url };
+                    actorMapper.Insert(actorInfo);
+                    if (existActors != null) existActors.Add(actorInfo);
+                    if (cachedActorDict == null) actorDict[name] = actorInfo;
+                    else cachedActorDict[name] = actorInfo;
+                } else {
+                    // 已有演员，更新图片 URL
+                    actorInfo.ImageUrl = url;
+                    actorMapper.UpdateFieldById("ImageUrl", url, actorInfo.ActorID);
                 }
+
+                // 保存演员-视频关联
+                string sql = $"insert or ignore into metadata_to_actor (ActorID,DataID) values ({actorInfo.ActorID},{video.DataID})";
+                metaDataMapper.ExecuteNonQuery(sql);
             }
         }
 
@@ -616,6 +584,8 @@ namespace Jvedio.Core.Scan
             List<MetaData> toInsertData = toInsert.Select(arg => arg.toMetaData()).ToList();
             if (toInsertData.Count <= 0)
                 return;
+
+            // 批量插入元数据（单条后获取ID，其余批量）
             long.TryParse(metaDataMapper.InsertAndGetID(toInsertData[0]).ToString(), out long before);
             toInsertData.RemoveAt(0);
 
@@ -651,10 +621,14 @@ namespace Jvedio.Core.Scan
 
             AddTags(toInsert);
 
-            // 处理演员
+            // 处理演员 — 一次性预加载 + 构建字典，避免 foreach 内重复构建
             existActors = actorMapper.SelectList();
+            Dictionary<string, ActorInfo> insertActorDict = null;
+            if (existActors != null) {
+                insertActorDict = existActors.ToDictionary(a => a.ActorName, StringComparer.OrdinalIgnoreCase);
+            }
             foreach (var video in toInsert)
-                HandleActor(video);
+                HandleActor(video, insertActorDict);
 
             ScanResult.InsertVideos.AddRange(toInsert);
         }

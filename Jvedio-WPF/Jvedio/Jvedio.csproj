@@ -95,10 +95,6 @@
     <Reference Include="BouncyCastle.Crypto, Version=1.8.5.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
       <HintPath>..\packages\BouncyCastle.1.8.5\lib\BouncyCastle.Crypto.dll</HintPath>
     </Reference>
-    <Reference Include="CommonNet, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Jvedio-Crawler\Common\bin\Debug\CommonNet.dll</HintPath>
-    </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.4.4\lib\net45\EntityFramework.dll</HintPath>
     </Reference>
@@ -263,8 +259,6 @@
     <Compile Include="AvalonEdit\Utils.cs" />
     <Compile Include="Core\Config\Base\AbstractConfig.cs" />
     <Compile Include="Core\Config\Base\IConfig.cs" />
-    <Compile Include="Core\Config\Common\DownloadConfig.cs" />
-    <Compile Include="Core\Config\Common\JavaServerConfig.cs" />
     <Compile Include="Core\Config\Common\ThemeConfig.cs" />
     <Compile Include="Core\Config\Data\FilterConfig.cs" />
     <Compile Include="Core\Config\Data\VideoConfig.cs" />
@@ -274,27 +268,20 @@
     <Compile Include="Core\Enums\OpenPathType.cs" />
     <Compile Include="Core\Enums\SearchMode.cs" />
     <Compile Include="Core\Enums\ThemeSingleColor.cs" />
-    <Compile Include="Core\Exceptions\CrawlerNotSupportException.cs" />
     <Compile Include="Core\Exceptions\SqlException.cs" />
     <Compile Include="Core\Exceptions\NFOParseException.cs" />
     <Compile Include="Core\Exceptions\DllLoadFailedException.cs" />
     <Compile Include="Core\Exceptions\DirCreateFailedException.cs" />
     <Compile Include="Core\Command\File.cs" />
-    <Compile Include="Core\Config\Common\ProxyConfig.cs" />
     <Compile Include="Core\Config\Common\FFmpegConfig.cs" />
     <Compile Include="Core\Config\Common\RenameConfig.cs" />
-    <Compile Include="Core\Config\Common\PluginConfig.cs" />
+    <Compile Include="Core\Config\Common\RenameConfig.cs" />
     <Compile Include="Core\Config\Common\ScanConfig.cs" />
-    <Compile Include="Core\Config\Common\ServerConfig.cs" />
     <Compile Include="Core\Config\WindowConfig\Filter.cs" />
     <Compile Include="Core\Config\WindowConfig\Settings.cs" />
-    <Compile Include="Core\Crawler\ActorSearch.cs" />
-    <Compile Include="Core\Crawler\CrawlerHeader.cs" />
     <Compile Include="Core\CustomEventArgs\PreviewImageEventArgs.cs" />
     <Compile Include="Core\Enums\AssociationType.cs" />
-    <Compile Include="Core\Enums\DownLoadState.cs" />
     <Compile Include="Core\Enums\ImageType.cs" />
-    <Compile Include="Core\Exceptions\CrawlerNotFoundException.cs" />
     <Compile Include="Core\Exceptions\MediaCutOutOfRangeException.cs" />
     <Compile Include="Core\Exceptions\NotFoundException.cs" />
     <Compile Include="Core\Extensions\WheelSpeedScrollViewer.cs" />
@@ -302,13 +289,8 @@
     <Compile Include="Core\Config\PathManager.cs" />
     <Compile Include="Core\Lang\LangManager.cs" />
     <Compile Include="Core\Media\ImageCache.cs" />
-    <Compile Include="Core\Scan\IScan.cs" />
     <Compile Include="Core\Tasks\BaseManager.cs" />
     <Compile Include="Core\Tasks\ScreenShotManager.cs" />
-    <Compile Include="Core\Net\UrlManager.cs" />
-    <Compile Include="Core\Interfaces\IDictKeys.cs" />
-    <Compile Include="Core\Net\DownLoadTask.cs" />
-    <Compile Include="Core\Plugins\Crawler\CrawlerManager.cs" />
     <Compile Include="Core\CustomSettingsProvider.cs" />
     <Compile Include="Core\Enums\ComicType.cs" />
     <Compile Include="Core\Enums\DataBaseType.cs" />
@@ -327,8 +309,6 @@
     <Compile Include="Core\Extensions\MenuItemExtensions.cs" />
     <Compile Include="Core\Scan\ScanDetailInfo.cs" />
     <Compile Include="Core\Tasks\ScanManager.cs" />
-    <Compile Include="Core\Server\ServerManager.cs" />
-    <Compile Include="Core\Server\ServerStatus.cs" />
     <Compile Include="Core\UserControls\Interfaces\ISideMenu.cs" />
     <Compile Include="Core\UserControls\ITabItemControl.cs" />
     <Compile Include="Core\UserControls\LabelView.xaml.cs">
@@ -357,7 +337,6 @@
     <Compile Include="Mapper\BaseMapper\MySQLMapper.cs" />
     <Compile Include="Mapper\MapperManager.cs" />
     <Compile Include="CustomStyle\StyleManager.cs" />
-    <Compile Include="Core\Plugins\Crawler\CrawlerInfo.cs" />
     <Compile Include="Core\Scan\ComicScan.cs" />
     <Compile Include="Core\Scan\GameScan.cs" />
     <Compile Include="Core\Scan\PictureScan.cs" />
@@ -380,7 +359,6 @@
     <Compile Include="Core\UserControls\ActorList.xaml.cs">
       <DependentUpon>ActorList.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Upgrade\UpgradeHelper.cs" />
     <Compile Include="ViewModels\TabItemManager.cs" />
     <Compile Include="WindowsDialog\Dialog_Logs.xaml.cs">
       <DependentUpon>Dialog_Logs.xaml</DependentUpon>
@@ -389,9 +367,7 @@
     <Compile Include="Entity\Common\Actress.cs" />
     <Compile Include="Core\Scan\ScanTask.cs" />
     <Compile Include="Entity\Base\ListNode.cs" />
-    <Compile Include="Entity\CommonSQL\AIFaceInfo.cs" />
     <Compile Include="Entity\CommonSQL\Association.cs" />
-    <Compile Include="Entity\CommonSQL\SearchHistory.cs" />
     <Compile Include="Entity\CommonSQL\AppConfig.cs" />
     <Compile Include="Entity\CommonSQL\AppDatabases.cs" />
     <Compile Include="Entity\CommonSQL\CommonImage.cs" />
@@ -400,43 +376,26 @@
     <Compile Include="Entity\Data\Comic.cs" />
     <Compile Include="Entity\Data\Game.cs" />
     <Compile Include="Entity\Data\Picture.cs" />
-    <Compile Include="Entity\Data\UrlCode.cs" />
     <Compile Include="Entity\Data\Video.cs" />
     <Compile Include="Entity\Common\DetailMovie.cs" />
     <Compile Include="Entity\Common\Message.cs" />
     <Compile Include="Entity\Common\Movie.cs" />
     <Compile Include="Entity\Common\Serializable.cs" />
-    <Compile Include="Core\Crawler\CrawlerServer.cs" />
-    <Compile Include="Entity\Common\Server.cs" />
-    <Compile Include="Entity\CommonSQL\Magnet.cs" />
-    <Compile Include="Entity\CommonSQL\CommonMagnet.cs" />
-    <Compile Include="Entity\CommonSQL\Translation.cs" />
     <Compile Include="Entity\Common\VideoInfo.cs" />
-    <Compile Include="WindowsDialog\Dialog_Notice.xaml.cs">
-      <DependentUpon>Dialog_Notice.xaml</DependentUpon>
-    </Compile>
     <Compile Include="WindowsDialog\Dialog_NewMovie.xaml.cs">
       <DependentUpon>Dialog_NewMovie.xaml</DependentUpon>
     </Compile>
     <Compile Include="Utils\Extern\JvedioLib.cs" />
-    <Compile Include="Core\Tasks\DownloadManager.cs" />
-    <Compile Include="Mapper\Common\AssociationMapper.cs" />
     <Compile Include="Mapper\Common\ActorMapper.cs" />
-    <Compile Include="Mapper\Common\AIFaceMapper.cs" />
     <Compile Include="Mapper\Common\AppConfigMapper.cs" />
     <Compile Include="Mapper\Common\AppDatabaseMapper.cs" />
     <Compile Include="Mapper\Common\GameMapper.cs" />
     <Compile Include="Mapper\Common\ComicMapper.cs" />
     <Compile Include="Mapper\Common\TagStampMapper.cs" />
-    <Compile Include="Mapper\Common\SearchHistoryMapper.cs" />
     <Compile Include="Mapper\Common\ComImagesMapper.cs" />
-    <Compile Include="Mapper\Common\MagnetsMapper.cs" />
     <Compile Include="Mapper\Common\MetaDataMapper.cs" />
-    <Compile Include="Mapper\Common\TranslationMapper.cs" />
-    <Compile Include="Mapper\Common\UrlCodeMapper.cs" />
     <Compile Include="Mapper\Common\PictureMapper.cs" />
     <Compile Include="Mapper\Common\VideoMapper.cs" />
-    <Compile Include="Upgrade\Jvedio4ToJvedio5.cs" />
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -448,7 +407,6 @@
     <Compile Include="Utils\Config\RecentWatchedConfig.cs" />
     <Compile Include="Utils\Config\ScanPathConfig.cs" />
     <Compile Include="Entity\Common\MySqlite.cs" />
-    <Compile Include="Core\Net\VideoDownLoader.cs" />
     <Compile Include="Core\Media\ImageSlide.cs" />
     <Compile Include="Core\Logs\Logger.cs" />
     <Compile Include="Entity\Common\NFO.cs" />
@@ -476,9 +434,6 @@
     </Compile>
     <Compile Include="Windows\Window_Edit.xaml.cs">
       <DependentUpon>Window_Edit.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\Window_Server.xaml.cs">
-      <DependentUpon>Window_Server.xaml</DependentUpon>
     </Compile>
     <Compile Include="Windows\Window_Settings.xaml.cs">
       <DependentUpon>Window_Settings.xaml</DependentUpon>
@@ -566,10 +521,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="WindowsDialog\Dialog_Notice.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
     <Page Include="WindowsDialog\Dialog_NewMovie.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -614,10 +565,6 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Windows\Window_Server.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="Windows\Window_Settings.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -648,7 +595,6 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Content Include="Reference\CommonNet.dll" />
     <Resource Include="Resources\Picture\refresh.png" />
     <Resource Include="Resources\Picture\pinned.png" />
     <Resource Include="Resources\Picture\nothing.png" />
@@ -665,7 +611,6 @@
     <Resource Include="Resources\Picture\搜索.png" />
     <Resource Include="Resources\Picture\新增.png" />
     <Resource Include="Resources\Picture\导入.png" />
-    <Content Include="Reference\HtmlAgilityPack.dll" />
     <Content Include="Reference\ICSharpCode.AvalonEdit.dll" />
     <Content Include="Reference\JvedioLib.dll" />
     <Resource Include="Resources\Picture\asso.png" />
@@ -881,17 +826,7 @@ XCOPY  "$(ProjectDir)Resources\Jvedio.ico"  "$(ProjectDir)bin\Release\"    /Y /i
   <PropertyGroup>
     <PostBuildEvent>XCOPY  "$(ProjectDir)Data\config.ini"  "$(ProjectDir)bin\Debug\"   /Y /i
 
-mkdir "$(ProjectDir)bin\Debug\plugins\crawlers"
-
-XCOPY  "$(ProjectDir)Reference\CommonNet.dll"  "$(ProjectDir)bin\Debug\plugins\crawlers"    /Y /i
-
-XCOPY  "$(ProjectDir)Data\config.ini"  "$(ProjectDir)bin\Release\"   /Y /i
-
-mkdir "$(ProjectDir)bin\Release\plugins\crawlers"
-
-XCOPY  "$(ProjectDir)Reference\CommonNet.dll"  "$(ProjectDir)bin\Release\plugins\crawlers"    /Y /i
-
-XCOPY  "$(ProjectDir)Reference\HtmlAgilityPack.dll"  "$(ProjectDir)bin\Release\plugins\crawlers"    /Y /i</PostBuildEvent>
+XCOPY  "$(ProjectDir)Data\config.ini"  "$(ProjectDir)bin\Release\"   /Y /i</PostBuildEvent>
   </PropertyGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

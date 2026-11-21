@@ -74,17 +74,6 @@ namespace Jvedio.ViewModel
         public bool LoadingData { get; set; }
         private bool LoadingLabel { get; set; }
 
-        private bool _TeenMode = ConfigManager.Settings.TeenMode;
-
-        public bool TeenMode {
-            get { return _TeenMode; }
-
-            set {
-                _TeenMode = value;
-                RaisePropertyChanged();
-            }
-        }
-
         private int _SelectImageIndex = 0;
 
         public int SelectImageIndex {
@@ -258,18 +247,18 @@ namespace Jvedio.ViewModel
             }
 
             CurrentVideo = video;
-            // 磁力
-            List<Magnet> magnets = magnetsMapper.SelectList(new SelectWrapper<Magnet>().Eq("DataID", dataID));
-            if (magnets?.Count > 0) {
-                try {
-                    CurrentVideo.Magnets = magnets.OrderByDescending(arg => arg.Size)
-                        .ThenByDescending(arg => arg.Releasedate)
-                        .ThenByDescending(arg => string.Join(" ", arg.Tags).Length).ToList();
-                    Logger.Info($"set magnets");
-                } catch (Exception ex) {
-                    Logger.Error(ex);
-                }
-            }
+            // 磁力 - removed (network feature)
+            // List<Magnet> magnets = magnetsMapper.SelectList(new SelectWrapper<Magnet>().Eq("DataID", dataID));
+            // if (magnets?.Count > 0) {
+            //     try {
+            //         CurrentVideo.Magnets = magnets.OrderByDescending(arg => arg.Size)
+            //             .ThenByDescending(arg => arg.Releasedate)
+            //             .ThenByDescending(arg => string.Join(" ", arg.Tags).Length).ToList();
+            //         Logger.Info($"set magnets");
+            //     } catch (Exception ex) {
+            //         Logger.Error(ex);
+            //     }
+            // }
 
             if (InfoSelectedIndex == 1)
                 LoadVideoInfo();

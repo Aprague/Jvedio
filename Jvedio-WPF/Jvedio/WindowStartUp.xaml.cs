@@ -1,13 +1,12 @@
 ﻿using Jvedio.Core.Config;
+using Jvedio.Core.Config.Base;
 using Jvedio.Core.DataBase;
 using Jvedio.Core.Enums;
 using Jvedio.Core.Exceptions;
 using Jvedio.Core.Global;
-using Jvedio.Core.Plugins.Crawler;
 using Jvedio.Core.Scan;
 using Jvedio.Entity;
 using Jvedio.Entity.CommonSQL;
-using Jvedio.Upgrade;
 using Jvedio.ViewModel;
 using Jvedio.Windows;
 using SuperControls.Style;
@@ -78,7 +77,7 @@ namespace Jvedio
             this.Height = SystemParameters.PrimaryScreenHeight * 2 / 3;
 
             cts = new CancellationTokenSource();
-            cts.Token.Register(() => Logger.Warn("cancel task"));
+            cts.Token.Register(() => App.Logger.Warn("cancel task"));
             ct = cts.Token;
         }
 
@@ -132,10 +131,6 @@ namespace Jvedio
             InitAppData();
             DeleteDirs();
             await BackupData();
-            await MovePlugins();
-            await DeletePlugins();
-            CrawlerManager.Init(true);
-            ConfigManager.ServerConfig.Read();
 
             InitContext();
             UtilsManager.OnUtilSettingChange(); // 初始化 SuperUtils 的配置
@@ -164,26 +159,9 @@ namespace Jvedio
 
         private void InitFirstRun()
         {
-#if DEBUG
-            //ConfigManager.Main.FirstRun = true;
-#endif
-            if (ConfigManager.Main.FirstRun) {
-                Dialog_SetSkinLang skinLang = new Dialog_SetSkinLang();
-                skinLang.SetThemeConfig(ConfigManager.ThemeConfig.ThemeIndex,
-                    ConfigManager.ThemeConfig.ThemeID);
-                skinLang.InitThemes();
-                Dialog_SetSkinLang.OnLangChanged += (lang) => {
-                    Jvedio.Core.Lang.LangManager.SetLang(lang);
-                    ConfigManager.Settings.CurrentLanguage = lang;
-                    ConfigManager.Settings.Save();
-                };
-                Dialog_SetSkinLang.OnThemeChanged += (ThemeIdx, ThemeID) => {
-                    ConfigManager.ThemeConfig.ThemeIndex = ThemeIdx;
-                    ConfigManager.ThemeConfig.ThemeID = ThemeID;
-                    ConfigManager.ThemeConfig.Save();
-                };
-                skinLang.ShowDialog(this);
-            }
+            // 默认简体中文 + 白色主题，不再弹出选择弹窗
+            SuperControls.Style.LangManager.SetLang("zh-CN");
+            Jvedio.Core.Lang.LangManager.SetLang("zh-CN");
         }
 
 
@@ -202,49 +180,11 @@ namespace Jvedio
 
         private void SetLang()
         {
-            // 设置语言
-            if (!string.IsNullOrEmpty(ConfigManager.Settings.CurrentLanguage)
-                && SuperControls.Style.LangManager.SupportLanguages.Contains(ConfigManager.Settings.CurrentLanguage)) {
-                SuperControls.Style.LangManager.SetLang(ConfigManager.Settings.CurrentLanguage);
-                Jvedio.Core.Lang.LangManager.SetLang(ConfigManager.Settings.CurrentLanguage);
-            }
+            // 固定简体中文
+            SuperControls.Style.LangManager.SetLang("zh-CN");
+            Jvedio.Core.Lang.LangManager.SetLang("zh-CN");
         }
 
-        private async Task<bool> MovePlugins()
-        {
-            await Task.Delay(1);
-            string path = Path.Combine(PathManager.BasePluginsPath, "temp");
-            bool success = DirHelper.TryCopy(path, PathManager.BasePluginsPath);
-            if (success)
-                DirHelper.TryDelete(path);
-            return true;
-        }
-
-        private async Task<bool> DeletePlugins()
-        {
-            await Task.Delay(1);
-            List<string> list = JsonUtils.TryDeserializeObject<List<string>>(ConfigManager.PluginConfig.DeleteList);
-            if (list != null && list.Count > 0) {
-                for (int i = list.Count - 1; i >= 0; i--) {
-                    string pluginId = list[i];
-                    string[] paths = pluginId.Split(new char[] { '/', '\\' });
-                    if (paths.Length <= 1)
-                        continue;
-                    string type = paths[0];
-                    if (!type.EndsWith("s"))
-                        type += "s";
-                    paths[0] = type;
-                    string targetPath = Path.GetFullPath(Path.Combine(PathManager.BasePluginsPath, paths.Aggregate(Path.Combine)));
-                    if (Directory.Exists(targetPath)) {
-                        DirHelper.TryDelete(targetPath);
-                        list.RemoveAt(i);
-                    }
-                }
-                ConfigManager.PluginConfig.DeleteList = JsonUtils.TrySerializeObject(list);
-                ConfigManager.PluginConfig.Save();
-            }
-            return true;
-        }
 
         private async Task<bool> BackupData()
         {
@@ -270,7 +210,7 @@ namespace Jvedio
                 if (backup) {
                     string dir = Path.Combine(BackupPath, DateHelper.NowDate());
                     DirHelper.TryCreateDirectory(dir, (Action<Exception>)((err) => {
-                        Logger.Error(err);
+                        App.Logger.Error(err);
                         return;
                     }));
                     string target1 = Path.Combine(dir, "app_configs.sqlite");
@@ -289,35 +229,11 @@ namespace Jvedio
 
         private async Task<bool> MoveOldFiles()
         {
-            // 迁移公共数据
-            Jvedio4ToJvedio5.MoveAI();
-            string[] files = FileHelper.TryScanDIr(oldDataPath, "*.sqlite", SearchOption.TopDirectoryOnly);
-            bool success = await Jvedio4ToJvedio5.MoveDatabases(files);
-            if (success && files != null && files.Length > 0) {
-                Jvedio4ToJvedio5.MoveRecentWatch();
-                Jvedio4ToJvedio5.MoveMagnets();
-                Jvedio4ToJvedio5.MoveTranslate();
-                Jvedio4ToJvedio5.MoveMyList();
-                Jvedio4ToJvedio5.MoveScanPathConfig(files);
-                ConfigManager.Settings.OpenDataBaseDefault = false;
-            }
-
-            // 移动文件
+            // Migrate old local files
             string targetDir = Path.Combine(AllOldDataPath, "DataBase");
             if (Directory.Exists(targetDir))
                 DirHelper.TryDelete(targetDir);
-            DirHelper.TryMoveDir(oldDataPath, targetDir); // 移动 DataBase
-            string[] moveFiles =
-            {
-                "SearchHistory", "ServersConfig", "RecentWatch",
-                "AI.sqlite", "Magnets.sqlite", "Translate.sqlite", "mylist.sqlite",
-            };
-
-            foreach (string filename in moveFiles) {
-                string origin = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
-                if (File.Exists(origin))
-                    FileHelper.TryMoveFile(origin, Path.Combine(AllOldDataPath, filename));
-            }
+            DirHelper.TryMoveDir(oldDataPath, targetDir);
 
             return true;
         }
@@ -329,7 +245,7 @@ namespace Jvedio
                 // 读取配置文件，设置 debug
                 ReadConfig();
             } catch (Exception ex) {
-                Logger.Error(ex);
+                App.Logger?.Error(ex);
             }
         }
 
@@ -350,7 +266,7 @@ namespace Jvedio
                     }
                 }
             }
-            Logger.Info($"debug mode: {ConfigManager.Settings.Debug}");
+            App.Logger.Info($"debug mode: {ConfigManager.Settings.Debug}");
         }
 
 
@@ -371,11 +287,8 @@ namespace Jvedio
                     FileHelper.TryDeleteDir("Temp");
                 }
 
-                FileHelper.TryDeleteDir(
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins", "themes", "temp"));
-
             } catch (Exception ex) {
-                Logger.Error(ex);
+                App.Logger?.Error(ex);
             }
         }
 
@@ -393,7 +306,7 @@ namespace Jvedio
                         FileHelper.TryDeleteFile(file);
                 }
             } catch (Exception e) {
-                Logger.Error(e);
+                App.Logger.Error(e);
             }
         }
 
@@ -410,7 +323,7 @@ namespace Jvedio
                         DirHelper.TryDelete(dirName);
                 }
             } catch (Exception e) {
-                Logger.Error(e);
+                App.Logger.Error(e);
             }
         }
 
@@ -609,7 +522,7 @@ namespace Jvedio
                                     break;
                             }
                         } catch (Exception ex) {
-                            Logger.Error(ex);
+                            App.Logger.Error(ex);
                             MsgBox.Show(ex.Message);
                         }
                     } else {
@@ -749,14 +662,6 @@ namespace Jvedio
                 vieModel.ReadFromDataBase();
             }
         }
-
-        private void ShowUpgradeWindow(object sender, RoutedEventArgs e)
-        {
-            UpgradeHelper.OpenWindow();
-        }
-
-
-
         private void ShowAbout(object sender, RoutedEventArgs e)
         {
             App.ShowAbout();

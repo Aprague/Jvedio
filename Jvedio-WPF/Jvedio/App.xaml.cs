@@ -1,8 +1,4 @@
-﻿using Jvedio.Core.Global;
-using Jvedio.Core.Tasks;
-using SuperControls.Style.Windows;
-using SuperUtils.IO;
-using System;
+﻿using System;
 using System.Threading;
 using System.Windows;
 using SuperControls.Style;
@@ -10,6 +6,7 @@ using System.Text;
 using System.Windows.Interop;
 using SuperUtils.Systems;
 using Jvedio.Windows;
+using Jvedio.Core.Tasks;
 #if DEBUG
 #else
 using System.Diagnostics;
@@ -28,7 +25,6 @@ namespace Jvedio
         public static Jvedio.Core.Logs.Logger Logger { get; private set; }
         public static ScreenShotManager ScreenShotManager { get; private set; }
         public static ScanManager ScanManager { get; private set; }
-        public static DownloadManager DownloadManager { get; private set; }
 
 
         public EventWaitHandle ProgramStarted { get; set; }
@@ -46,15 +42,7 @@ namespace Jvedio
 
             ScreenShotManager = ScreenShotManager.CreateInstance();
             ScanManager = ScanManager.CreateInstance();
-            DownloadManager = DownloadManager.CreateInstance();
-
-
-            Window_ErrorMsg.OnFeedBack += () => {
-                FileHelper.TryOpenUrl(UrlManager.FeedBackUrl);
-            };
-            Window_ErrorMsg.OnLog += (str) => {
-                Logger.Info(str);
-            };
+            // Window_ErrorMsg removed: error dialog no longer exists
 
         }
 
@@ -136,19 +124,17 @@ namespace Jvedio
 
         public static void ShowAbout()
         {
-            Dialog_About about = new Dialog_About();
-            about.AppName = "Jvedio";
-            about.AppSubName = "本地视频管理软件";
-            about.Version = GetLocalVersion();
-            about.ReleaseDate = ConfigManager.RELEASE_DATE;
-            about.Author = "Chao";
-            about.License = "GPL-3.0";
-            about.GithubUrl = UrlManager.ProjectUrl;
-            about.WebUrl = UrlManager.WebPage;
-            about.JoinGroupUrl = UrlManager.ProjectUrl;
-            about.Image =
-                SuperUtils.Media.ImageHelper.ImageFromUri("pack://application:,,,/Resources/Picture/Jvedio.png");
-            about.ShowDialog();
+            // Dialog_About removed: dialog window no longer exists
+            // Show a message box instead
+            System.Windows.MessageBox.Show(
+                "Jvedio v" + GetLocalVersion() + "\n" +
+                "本地视频管理软件\n" +
+                "Copyright © " + ConfigManager.RELEASE_DATE + "\n\n" +
+                "GPL-3.0 License\n" +
+                "https://github.com/hitchao/Jvedio",
+                "About Jvedio",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
         }
 
 

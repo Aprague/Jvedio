@@ -1,5 +1,4 @@
 ﻿using Jvedio.Core.Enums;
-using Jvedio.Core.Server;
 using Jvedio.Core.UserControls;
 using Jvedio.Entity;
 using Jvedio.Entity.Common;
@@ -206,17 +205,6 @@ namespace Jvedio.ViewModel
             }
         }
 
-
-        public ServerStatus _ServerStatus;
-
-        public ServerStatus ServerStatus {
-            get { return _ServerStatus; }
-
-            set {
-                _ServerStatus = value;
-                RaisePropertyChanged();
-            }
-        }
 
         private Visibility _ShowFirstRun = Visibility.Collapsed;
 

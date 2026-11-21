@@ -445,17 +445,7 @@
                                         <MenuItem Click="OpenPath" Header="{DynamicResource ScreenShot}" />
                                     </MenuItem>
 
-                                    <MenuItem
-                                        Click="OpenWeb"
-                                        Header="{DynamicResource ViewWebsite}"
-                                        Icon="pack://application:,,,/Resources/menuitem/openwebsite.png" />
-
-                                    <MenuItem
-                                        x:Name="CopyMagnetsMenuItem"
-                                        Header="{DynamicResource CopyMagnets}"
-                                        Visibility="{Binding TeenMode, Source={x:Static local:ConfigManager.Settings}, Mode=OneWay, Converter={StaticResource BoolToOppositeVisibilityConverter}}" />
-
-                                    <MenuItem Click="CopyFile" Header="{DynamicResource Menu_CopyFile}" />
+                                    <MenuItem Click="OpenWeb" Header="{DynamicResource Menu_CopyFile}" />
 
                                     <MenuItem Click="DeleteID" Header="{DynamicResource Menu_DeleteInfo}" />
                                     <MenuItem
@@ -928,8 +918,7 @@
                                                 <StackPanel
                                                     Margin="0,5,0,5"
                                                     Style="{StaticResource InfoStackPanel}"
-                                                    Tag="{Binding CurrentVideo.VideoType}"
-                                                    Visibility="{Binding TeenMode, Converter={StaticResource BoolToOppositeVisibilityConverter}, Mode=OneWay, Source={x:Static local:ConfigManager.Settings}}">
+                                                    Tag="{Binding CurrentVideo.VideoType}">
                                                     <TextBlock Style="{StaticResource BaseTextBlock}" Text="{DynamicResource Censored}" />
                                                     <TextBlock Style="{StaticResource BaseTextBlock}" Text="：" />
                                                     <ComboBox

@@ -34,7 +34,6 @@ namespace Jvedio.Core.Global
 
         public static string TranslateDataBasePath { get; set; }
 
-        public static string BasePluginsPath { get; set; }
 
         public static string ScanConfigPath { get; set; }
 
@@ -74,10 +73,9 @@ namespace Jvedio.Core.Global
             ScanConfigPath = Path.Combine(CurrentUserFolder, "ScanPathConfig.xml");
             ServersConfigPath = Path.Combine(CurrentUserFolder, "ServersConfigPath.xml");
             UserConfigPath = Path.Combine(CurrentUserFolder, "user-config.xml");
-            BasePluginsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
 
             // 初始化文件夹
-            InitDirs = new[] { BackupPath, LogPath, PicPath, ProjectImagePath, AllOldDataPath, Path.Combine(BasePluginsPath, "themes"), Path.Combine(BasePluginsPath, "crawlers") };
+            InitDirs = new[] { BackupPath, LogPath, PicPath, ProjectImagePath, AllOldDataPath };
             oldDataPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DataBase"); // Jvedio 5.0 之前的
             BasePicPath = string.Empty;
             PicPaths = new[] { "ScreenShot", "SmallPic", "BigPic", "ExtraPic", "Actors", "Gif" };

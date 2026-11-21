@@ -124,6 +124,7 @@ namespace Jvedio
             total.Text = ScanResult.TotalCount.ToString();
             import.Text = ScanResult.Import.Count.ToString();
             notImport.Text = ScanResult.NotImport.Count.ToString();
+            skipped.Text = ScanResult.Skipped.ToString();
             update.Text = ScanResult.Update.Count.ToString();
             failNfo.Text = ScanResult.FailNFO.Count.ToString();
             scanDate.Text = ScanResult.ScanDate.ToString();

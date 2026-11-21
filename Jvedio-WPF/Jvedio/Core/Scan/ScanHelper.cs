@@ -1,4 +1,5 @@
-﻿using Jvedio.Core.Enums;
+﻿using Jvedio.Core.DataBase;
+using Jvedio.Core.Enums;
 using Jvedio.Core.Scan;
 using Jvedio.Entity;
 using QueryEngine;
@@ -19,10 +20,9 @@ using static Jvedio.App;
 
 namespace Jvedio
 {
-    public class VideoParser : IScan
+    public class VideoParser
     {
         private const string CHARACTERS = "abcdefghijklmn";
-        public const int DEFAULT_MIN_FILESIZE = 0 * 1024 * 1024;   // 1MB
 
         private Action<string> Log { get; set; }
 
@@ -37,7 +37,7 @@ namespace Jvedio
         /// <summary>
         /// 最小文件大小（B）
         /// </summary>
-        public static double MinFileSize { get; set; } = DEFAULT_MIN_FILESIZE;
+        public static double MinFileSize { get; set; } = 0;
 
         public static string SubSectionFeature { get; set; } = "-,_,cd,-cd,hd,whole";
 
@@ -51,15 +51,9 @@ namespace Jvedio
             FilePattern = ScanTask.VIDEO_EXTENSIONS_LIST;
         }
 
-        public long GetMinFileSize()
-        {
-            Log?.Invoke($"min file size: {ConfigManager.ScanConfig.MinFileSize}");
-            return (long)ConfigManager.ScanConfig.MinFileSize * 1024 * 1024;
-        }
-
         public (List<Video> import, Dictionary<string, NotImportReason> notImport, List<string> failNFO)
             ParseMovie(List<string> filepaths, List<string> fileExt, CancellationToken ct,
-            bool insertNFO = true, Action<string> callBack = null, long minFileSize = 0)
+            bool insertNFO = true, Action<string> callBack = null)
         {
             if (filepaths == null || filepaths.Count == 0)
                 return (new List<Video>(), new Dictionary<string, NotImportReason>(), new List<string>());
@@ -70,11 +64,6 @@ namespace Jvedio
 
             List<string> nfoPaths = new List<string>();
             List<string> videoPaths = new List<string>();
-
-
-            minFileSize = GetMinFileSize();
-            if (minFileSize < 0)
-                minFileSize = DEFAULT_MIN_FILESIZE;
 
             foreach (var item in filepaths) {
                 if (string.IsNullOrEmpty(item))
@@ -118,20 +107,7 @@ namespace Jvedio
             // 2. 导入视频
             if (videoPaths.Count > 0) {
                 try {
-                    List<Video> videos = DistinctMovie(videoPaths, ct, (list) => {
-                        foreach (var key in list.Keys) {
-                            notImport.Add(key, list[key]);
-                        }
-                    });
-
-                    // 检查是否大于给定大小的影片
-                    foreach (var item in videos.Where(arg => arg.Size < minFileSize).Select(arg => arg.Path)) {
-                        if (notImport.ContainsKey(item))
-                            continue;
-                        notImport.Add(item, NotImportReason.SizeTooSmall);
-                    }
-
-                    videos.RemoveAll(arg => arg.Size < minFileSize);
+                    List<Video> videos = DistinctMovie(videoPaths, ct);
                     import.AddRange(videos);
                 } catch (OperationCanceledException) {
                     callBack?.Invoke($"{SuperControls.Style.LangManager.GetValueByKey("Cancel")}");
@@ -374,103 +350,29 @@ namespace Jvedio
             return files;
         }
 
-        // todo Europe 影片
         /// <summary>
         /// 分类视频并导入
         /// </summary>
         /// <param name="videoPaths"></param>
         /// <param name="ct"></param>
-        /// <param name="callBack"></param>
         /// <returns></returns>
-        public List<Video> DistinctMovie(List<string> videoPaths, CancellationToken ct, Action<Dictionary<string, NotImportReason>> sameVideoCallBack)
+        public List<Video> DistinctMovie(List<string> videoPaths, CancellationToken ct)
         {
             List<Video> result = new List<Video>();
-            Dictionary<string, List<string>> vIDDict = new Dictionary<string, List<string>>();
-            string sep = SuperUtils.Values.ConstValues.SeparatorString;
-            List<string> noVIDList = new List<string>();
 
-            // 检查无识别码的视频
+            // 不做任何重复判断，全部导入
             foreach (string path in videoPaths) {
                 if (!File.Exists(path))
                     continue;
                 string VID = string.Empty;
                 if (ConfigManager.ScanConfig.FetchVID)
                     VID = Path.GetFileNameWithoutExtension(path).Split(' ')[0].ToUpper();
-                    //VID = JvedioLib.Security.Identify.GetVID(Path.GetFileNameWithoutExtension(path));
                 if (string.IsNullOrEmpty(VID)) {
-                    // 无识别码
-                    noVIDList.Add(path);
+                    result.Add(ParseVideo(string.Empty, path, calcHash: true));
                 } else {
-                    // 有识别码
-                    // 检查分段的视频
-                    if (!vIDDict.ContainsKey(VID)) {
-                        List<string> pathList = new List<string> { path };
-                        vIDDict.Add(VID, pathList);
-                    } else {
-                        vIDDict[VID].Add(path); // 每个 VID 对应一组视频路径，视频路径 >=2 的可能为分段视频
-                    }
+                    result.Add(ParseVideo(VID, path));
                 }
-            }
-
-            // 检查分段的视频
-            foreach (string vID in vIDDict.Keys) {
-                List<string> paths = vIDDict[vID];
-                if (paths.Count <= 1) {
-                    // 一个 VID 对应 一个路径
-                    string path = paths[0];
-
-                    result.Add(ParseVideo(vID, path));
-                } else {
-                    // 一个 VID 对应多个路径
-                    // 路径个数大于1 才为分段视频
-                    (bool isSubSection, List<string> subSectionList, List<string> notSubSection) = (false, new List<string>(), new List<string>());
-                    try {
-                        (isSubSection, subSectionList, notSubSection) = HandleSubSection(paths);
-                    } catch (Exception ex) {
-                        Logger.Warn("解析分段视频错误");
-                        Logger.Error(ex);
-                    }
-
-                    if (isSubSection) {
-                        // 文件大小视为所有文件之和
-                        long size = subSectionList.Sum(arg => FileHelper.TryGetFileLength(arg));
-                        string subsection = string.Join(sep, subSectionList);
-                        string firstPath = subSectionList[0];
-                        result.Add(ParseVideo(vID, firstPath, subsection, size));
-                    } else {
-                        // 重复的视频
-                        // 1、不是分段视频，但是几个视频的识别码一致，检测一下 hash，判断是否重复
-                        // 2、仅导入最大的视频
-                        int maxIndex = 0;
-                        long maxLength = 0;
-                        for (int i = 0; i < notSubSection.Count; i++) {
-                            string path = notSubSection[i];
-                            long len = FileHelper.TryGetFileLength(path);
-                            if (len > maxLength) {
-                                maxLength = len;
-                                maxIndex = i;
-                            }
-                        }
-
-                        Dictionary<string, NotImportReason> notImportList = new Dictionary<string, NotImportReason>();
-                        for (int i = 0; i < notSubSection.Count; i++) {
-                            string path = notSubSection[i];
-                            if (i == maxIndex)
-                                continue;
-                            notImportList.Add(path, NotImportReason.RepetitiveVID);
-                        }
-
-                        if (notSubSection.Count > 0)
-                            result.Add(ParseVideo(vID, notSubSection[maxIndex]));
-                        sameVideoCallBack?.Invoke(notImportList);
-                    }
-                }
-
                 ct.ThrowIfCancellationRequested();
-            }
-
-            foreach (string path in noVIDList) {
-                result.Add(ParseVideo(string.Empty, path, calcHash: true));
             }
 
             return result;

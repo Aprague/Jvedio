@@ -27,15 +27,10 @@ namespace Jvedio
         public static MetaData MetaData { get; set; }
         public static Settings Settings { get; set; }
 
-        public static Jvedio.Core.Config.ServerConfig ServerConfig { get; set; }
-        public static Jvedio.Core.Config.ProxyConfig ProxyConfig { get; set; }
         public static Jvedio.Core.Config.ScanConfig ScanConfig { get; set; }
         public static Jvedio.Core.Config.FFmpegConfig FFmpegConfig { get; set; }
         public static Jvedio.Core.Config.RenameConfig RenameConfig { get; set; }
-        public static Jvedio.Core.Config.PluginConfig PluginConfig { get; set; }
         public static Jvedio.Core.Config.ThemeConfig ThemeConfig { get; set; }
-        public static Jvedio.Core.Config.DownloadConfig DownloadConfig { get; set; }
-        public static Jvedio.Core.Config.JavaServerConfig JavaServerConfig { get; set; }
         public static Jvedio.Core.Config.Data.VideoConfig VideoConfig { get; set; }
         public static Jvedio.Core.Config.Data.FilterConfig FilterConfig { get; set; }
 
@@ -50,16 +45,10 @@ namespace Jvedio
             Settings = Settings.CreateInstance();
 
 
-            ServerConfig = Jvedio.Core.Config.ServerConfig.CreateInstance();
-            ProxyConfig = Jvedio.Core.Config.ProxyConfig.CreateInstance();
             ScanConfig = Jvedio.Core.Config.ScanConfig.CreateInstance();
             FFmpegConfig = Jvedio.Core.Config.FFmpegConfig.CreateInstance();
             RenameConfig = Jvedio.Core.Config.RenameConfig.CreateInstance();
-            PluginConfig = Jvedio.Core.Config.PluginConfig.CreateInstance();
             ThemeConfig = Jvedio.Core.Config.ThemeConfig.CreateInstance();
-            DownloadConfig = Jvedio.Core.Config.DownloadConfig.CreateInstance();
-            JavaServerConfig = Jvedio.Core.Config.JavaServerConfig.CreateInstance();
-
             VideoConfig = Jvedio.Core.Config.Data.VideoConfig.CreateInstance();
             FilterConfig = Jvedio.Core.Config.Data.FilterConfig.CreateInstance();
         }
@@ -75,22 +64,16 @@ namespace Jvedio
             Settings.Save();
 
 
-            ServerConfig.Save();
-            ProxyConfig.Save();
             ScanConfig.Save();
             FFmpegConfig.Save();
             RenameConfig.Save();
-            PluginConfig.Save();
             ThemeConfig.Save();
-            DownloadConfig.Save();
-            JavaServerConfig.Save();
             VideoConfig.Save();
             FilterConfig.Save();
         }
 
         public static void Restore()
         {
-            Settings.TeenMode = false;
         }
 
         private static void Init()
